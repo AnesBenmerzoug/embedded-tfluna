@@ -1,11 +1,11 @@
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FirmwareVersion {
     pub major: u8,
     pub minor: u8,
     pub revision: u8,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SerialNumber(pub [u8; 14]);
 
 pub trait TFLunaSync {

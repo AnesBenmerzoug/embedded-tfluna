@@ -1,5 +1,5 @@
 // I2c Slave Address
-pub const DEFAULT_SLAVE_ADDRESS: u16 = 0x10;
+pub const DEFAULT_SLAVE_ADDRESS: u8 = 0x10;
 // Registers
 pub const DISTANCE_REGISTER_ADDRESS: u8 = 0x00;
 pub const SIGNAL_STRENGTH_REGISTER_ADDRESS: u8 = 0x02;
