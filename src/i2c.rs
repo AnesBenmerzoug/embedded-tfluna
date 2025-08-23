@@ -106,7 +106,6 @@ where
 #[cfg(test)]
 mod test {
     extern crate std;
-    use std::println;
     use std::vec::Vec;
 
     use super::*;
@@ -115,32 +114,23 @@ mod test {
 
     #[test]
     fn test_get_firmware_version() {
-        let expectations = [
-            I2cTransaction::write(
+        let mut expectations = Vec::new();
+        for i in 0..3 {
+            expectations.push(I2cTransaction::write(
                 constants::DEFAULT_SLAVE_ADDRESS,
-                Vec::from([constants::FIRMWARE_VERSION_REGISTER_ADDRESS]),
-            ),
-            I2cTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([0])),
-            I2cTransaction::write(
+                Vec::from([constants::FIRMWARE_VERSION_REGISTER_ADDRESS + i]),
+            ));
+            expectations.push(I2cTransaction::read(
                 constants::DEFAULT_SLAVE_ADDRESS,
-                Vec::from([constants::FIRMWARE_VERSION_REGISTER_ADDRESS + 1]),
-            ),
-            I2cTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([1])),
-            I2cTransaction::write(
-                constants::DEFAULT_SLAVE_ADDRESS,
-                Vec::from([constants::FIRMWARE_VERSION_REGISTER_ADDRESS + 2]),
-            ),
-            I2cTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([1])),
-        ];
+                Vec::from([i]),
+            ));
+        }
         let mut i2c = I2cMock::new(&expectations);
         let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap();
-        let firmware_version = device.get_firmware_version().map_err(|err| {
-            println!("error: {:?}", err);
-            err
-        });
+        let firmware_version = device.get_firmware_version();
         assert!(firmware_version.is_ok(), "{:?}", firmware_version);
         let expected_firmware_version = FirmwareVersion {
-            major: 1,
+            major: 2,
             minor: 1,
             revision: 0,
         };
@@ -150,6 +140,34 @@ mod test {
             "{:?} is different from {:?}",
             firmware_version,
             expected_firmware_version
+        );
+        i2c.done();
+    }
+
+    #[test]
+    fn test_get_serial_number() {
+        let mut expectations = Vec::new();
+        for i in 0..14 {
+            expectations.push(I2cTransaction::write(
+                constants::DEFAULT_SLAVE_ADDRESS,
+                Vec::from([constants::SERIAL_NUMBER_REGISTER_ADDRESS + i]),
+            ));
+            expectations.push(I2cTransaction::read(
+                constants::DEFAULT_SLAVE_ADDRESS,
+                Vec::from([0]),
+            ));
+        }
+        let mut i2c = I2cMock::new(&expectations);
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap();
+        let serial_number = device.get_serial_number();
+        assert!(serial_number.is_ok(), "{:?}", serial_number);
+        let expected_serial_number = SerialNumber([0; 14]);
+        assert_eq!(
+            serial_number.unwrap(),
+            expected_serial_number,
+            "{:?} is different from {:?}",
+            serial_number,
+            expected_serial_number
         );
         i2c.done();
     }
