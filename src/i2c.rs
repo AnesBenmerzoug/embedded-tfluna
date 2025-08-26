@@ -1,29 +1,25 @@
 pub mod constants;
 pub mod errors;
 
-use embedded_hal::delay::DelayNs;
 use embedded_hal::i2c::{I2c, SevenBitAddress};
 
 use crate::i2c::errors::Error;
 use crate::traits::{FirmwareVersion, SensorReading, SerialNumber, TFLunaSync};
 
 #[derive(Debug)]
-pub struct TFLuna<I2C: I2c<SevenBitAddress>, D: DelayNs> {
+pub struct TFLuna<I2C: I2c<SevenBitAddress>> {
     i2c: I2C,
     address: SevenBitAddress,
-    delay: D,
 }
 
-impl<I2C, D> TFLuna<I2C, D>
+impl<I2C> TFLuna<I2C>
 where
     I2C: I2c<SevenBitAddress>,
-    D: DelayNs,
 {
-    pub fn new(i2c: I2C, address: SevenBitAddress, delay: D) -> Result<Self, Error<I2C::Error>> {
+    pub fn new(i2c: I2C, address: SevenBitAddress) -> Result<Self, Error<I2C::Error>> {
         let sensor = Self {
             i2c,
             address,
-            delay,
         };
         Ok(sensor)
     }
@@ -61,10 +57,9 @@ where
     }
 }
 
-impl<I2C, D> TFLunaSync for TFLuna<I2C, D>
+impl<I2C> TFLunaSync for TFLuna<I2C>
 where
     I2C: I2c<SevenBitAddress>,
-    D: DelayNs,
 {
     type Error = Error<I2C::Error>;
 
@@ -131,7 +126,6 @@ mod test {
     use std::vec::Vec;
 
     use super::*;
-    use embedded_hal_mock::eh1::delay::StdSleep as Delay;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 
     fn test_read(register_address: u8, value: u8) -> Vec<I2cTransaction> {
@@ -224,7 +218,7 @@ mod test {
                 .extend_from_slice(&test_read(constants::TIMESTAMP_REGISTER_ADDRESS + i, value));
         }
         let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap();
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
         let sensor_reading = device.measure();
         assert!(sensor_reading.is_ok(), "{:?}", sensor_reading);
         let expected_sensor_reading = SensorReading {
