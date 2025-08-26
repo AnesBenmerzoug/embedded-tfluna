@@ -74,9 +74,7 @@ where
 
     /// Reboots device
     fn reboot(&mut self) -> Result<(), Self::Error> {
-        self.i2c
-            .write(self.address, &[constants::REBOOT_COMMAND_VALUE])
-            .map_err(Error::I2c)?;
+        self.write_register(constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS, constants::REBOOT_COMMAND_VALUE)?;
         Ok(())
     }
 
@@ -139,12 +137,10 @@ mod test {
 
     /// Returns vector of i2c transaction expectations for an I2C write operation
     fn write_expectations(register_address: u8, value: u8) -> Vec<I2cTransaction> {
-        let expectations = Vec::from([
-            I2cTransaction::write(
-                constants::DEFAULT_SLAVE_ADDRESS,
-                Vec::from([register_address, value]),
-            ),
-        ]);
+        let expectations = Vec::from([I2cTransaction::write(
+            constants::DEFAULT_SLAVE_ADDRESS,
+            Vec::from([register_address, value]),
+        )]);
         expectations
     }
 
@@ -157,6 +153,18 @@ mod test {
         let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
         assert!(device.enable().is_ok());
         assert!(device.disable().is_ok());
+        i2c.done();
+    }
+
+    #[test]
+    fn test_reboot() {
+        let expectations = write_expectations(
+            constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
+            constants::REBOOT_COMMAND_VALUE,
+        );
+        let mut i2c = I2cMock::new(&expectations);
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        assert!(device.reboot().is_ok());
         i2c.done();
     }
 
