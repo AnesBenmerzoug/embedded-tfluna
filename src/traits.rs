@@ -8,10 +8,18 @@ pub struct FirmwareVersion {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SerialNumber(pub [u8; 14]);
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct SensorReading {
+    pub distance: u16,
+    pub signal_strength: u16,
+    pub temperature: f32,
+    pub timestamp: u16,
+}
+
 pub trait TFLunaSync {
     type Error;
 
-    fn convert_buffer_into_word(&self, buffer: &[u8; 2]) -> Result<u16, Self::Error> {
+    fn combine_buffer_into_word(&self, buffer: &[u8; 2]) -> Result<u16, Self::Error> {
         let value = buffer[0] as u16 + ((buffer[1] as u16) << 8);
         Ok(value)
     }
@@ -27,4 +35,7 @@ pub trait TFLunaSync {
     fn get_firmware_version(&mut self) -> Result<FirmwareVersion, Self::Error>;
 
     fn get_serial_number(&mut self) -> Result<SerialNumber, Self::Error>;
+
+    /// Reads distance, signal strength, temperature and timestamp
+    fn measure(&mut self) -> Result<SensorReading, Self::Error>;
 }
