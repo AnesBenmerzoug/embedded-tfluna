@@ -17,10 +17,7 @@ where
     I2C: I2c<SevenBitAddress>,
 {
     pub fn new(i2c: I2C, address: SevenBitAddress) -> Result<Self, Error<I2C::Error>> {
-        let sensor = Self {
-            i2c,
-            address,
-        };
+        let sensor = Self { i2c, address };
         Ok(sensor)
     }
 
@@ -128,7 +125,8 @@ mod test {
     use super::*;
     use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
 
-    fn test_read(register_address: u8, value: u8) -> Vec<I2cTransaction> {
+    /// Returns vector of i2c transaction expectations for an I2C read operation
+    fn read_expectations(register_address: u8, value: u8) -> Vec<I2cTransaction> {
         let expectations = Vec::from([
             I2cTransaction::write(
                 constants::DEFAULT_SLAVE_ADDRESS,
@@ -139,17 +137,40 @@ mod test {
         expectations
     }
 
+    /// Returns vector of i2c transaction expectations for an I2C write operation
+    fn write_expectations(register_address: u8, value: u8) -> Vec<I2cTransaction> {
+        let expectations = Vec::from([
+            I2cTransaction::write(
+                constants::DEFAULT_SLAVE_ADDRESS,
+                Vec::from([register_address, value]),
+            ),
+        ]);
+        expectations
+    }
+
+    #[test]
+    fn test_enable_disable() {
+        let mut expectations = Vec::new();
+        expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 1));
+        expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 0));
+        let mut i2c = I2cMock::new(&expectations);
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        assert!(device.enable().is_ok());
+        assert!(device.disable().is_ok());
+        i2c.done();
+    }
+
     #[test]
     fn test_get_firmware_version() {
         let mut expectations = Vec::new();
         for i in 0..3 {
-            expectations.extend_from_slice(&test_read(
+            expectations.extend_from_slice(&read_expectations(
                 constants::FIRMWARE_VERSION_REGISTER_ADDRESS + i,
                 i,
             ));
         }
         let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap();
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
         let firmware_version = device.get_firmware_version();
         assert!(firmware_version.is_ok(), "{:?}", firmware_version);
         let expected_firmware_version = FirmwareVersion {
@@ -171,11 +192,13 @@ mod test {
     fn test_get_serial_number() {
         let mut expectations = Vec::new();
         for i in 0..14 {
-            expectations
-                .extend_from_slice(&test_read(constants::SERIAL_NUMBER_REGISTER_ADDRESS + i, i));
+            expectations.extend_from_slice(&read_expectations(
+                constants::SERIAL_NUMBER_REGISTER_ADDRESS + i,
+                i,
+            ));
         }
         let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap();
+        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
         let serial_number = device.get_serial_number();
         assert!(serial_number.is_ok(), "{:?}", serial_number);
         let expected_serial_number =
@@ -195,27 +218,31 @@ mod test {
         let mut expectations = Vec::new();
         // Distance
         for (i, value) in (0..2).zip([0x0A, 0]) {
-            expectations
-                .extend_from_slice(&test_read(constants::DISTANCE_REGISTER_ADDRESS + i, value));
+            expectations.extend_from_slice(&read_expectations(
+                constants::DISTANCE_REGISTER_ADDRESS + i,
+                value,
+            ));
         }
         // Signal Strength
         for (i, value) in (0..2).zip([0x64, 0]) {
-            expectations.extend_from_slice(&test_read(
+            expectations.extend_from_slice(&read_expectations(
                 constants::SIGNAL_STRENGTH_REGISTER_ADDRESS + i,
                 value,
             ));
         }
         // Temperature
         for (i, value) in (0..2).zip([0xB2, 0x0C]) {
-            expectations.extend_from_slice(&test_read(
+            expectations.extend_from_slice(&read_expectations(
                 constants::TEMPERATURE_REGISTER_ADDRESS + i,
                 value,
             ));
         }
         // Timestamp
         for (i, value) in (0..2).zip([0, 0]) {
-            expectations
-                .extend_from_slice(&test_read(constants::TIMESTAMP_REGISTER_ADDRESS + i, value));
+            expectations.extend_from_slice(&read_expectations(
+                constants::TIMESTAMP_REGISTER_ADDRESS + i,
+                value,
+            ));
         }
         let mut i2c = I2cMock::new(&expectations);
         let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
