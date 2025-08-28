@@ -1,5 +1,6 @@
-// I2c Slave Address
+/// Default TF-Luna I2c Slave Address
 pub const DEFAULT_SLAVE_ADDRESS: u8 = 0x10;
+
 // Registers
 pub const DISTANCE_REGISTER_ADDRESS: u8 = 0x00;
 pub const SIGNAL_STRENGTH_REGISTER_ADDRESS: u8 = 0x02;
@@ -14,9 +15,14 @@ pub const RANGING_MODE_REGISTER_ADDRESS: u8 = 0x23;
 pub const ENABLE_REGISTER_ADDRESS: u8 = 0x25;
 pub const FRAMERATE_REGISTER_ADDRESS: u8 = 0x26;
 pub const POWER_MODE_REGISTER_ADDRESS: u8 = 0x28;
+/// Restore factory defaults command register (0x29)
+pub const RESTORE_FACTORY_DEFAULTS_REGISTER_ADDRESS: u8 = 0x29;
 pub const SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS: u8 = 0x2A;
 pub const DUMMY_DISTANCE_REGISTER_ADDRESS: u8 = 0x2C;
 pub const MINIMUM_DISTANCE_REGISTER_ADDRESS: u8 = 0x2E;
 pub const MAXIMUM_DISTANCE_REGISTER_ADDRESS: u8 = 0x30;
 // Command values
+/// Value to write for rebooting device
 pub const REBOOT_COMMAND_VALUE: u8 = 0x02;
+/// Value to write for restoring factory defaults
+pub const RESTORE_FACTORY_DEFAULTS_COMMAND_VALUE: u8 = 0x01;
