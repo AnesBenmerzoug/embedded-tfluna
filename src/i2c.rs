@@ -45,12 +45,44 @@ where
         Ok(buffer[0])
     }
 
-    /// Register word (two bytes) from consecutive registers
+    /// Read word (two bytes) from two consecutive registers
+    ///
+    /// # Arguments
+    /// * `start_register_address` - Address of first register. Second's register's address will be `start_register_address + 1`
+    ///
+    /// # Returns
+    /// * Ok(u16) - Read and combined value from consecutive registers
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
     fn read_word(&mut self, start_register_address: u8) -> Result<u16, Error<I2C::Error>> {
         let mut buffer = [0; 2];
         buffer[0] = self.read_register(start_register_address)?;
         buffer[1] = self.read_register(start_register_address + 1)?;
         self.combine_buffer_into_word(&buffer)
+    }
+
+    /// Set the I2C slave address of the device.
+    ///
+    /// # Arguments
+    /// * `address` - New slave address (must be in range 0x08 to 0x77)
+    ///
+    /// # Returns
+    /// * `Ok(())` - if address was set successfully
+    /// * `Err(Error::InvalidParameter)` - if address is out of valid range
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    pub fn set_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
+        if !(0x08..=0x77).contains(&address) {
+            return Err(Error::InvalidParameter);
+        }
+        self.write_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
+    }
+
+    /// Get the current I2C slave address of the device.
+    ///
+    /// # Returns
+    /// * `Ok(u8)` - Current slave address
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    pub fn get_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
+        self.read_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS)
     }
 }
 
@@ -59,6 +91,28 @@ where
     I2C: I2c<SevenBitAddress>,
 {
     type Error = Error<I2C::Error>;
+
+    /// Restore all settings to factory defaults.
+    ///
+    /// # Notes
+    /// Writes 0x01 to the RESTORE_FACTORY_DEFAULTS register (0x29).
+    /// This will reset all configurable parameters to their original values.
+    fn restore_factory_defaults(&mut self) -> Result<(), Self::Error> {
+        self.write_register(
+            constants::RESTORE_FACTORY_DEFAULTS_REGISTER_ADDRESS,
+            constants::RESTORE_FACTORY_DEFAULTS_COMMAND_VALUE,
+        )?;
+        Ok(())
+    }
+
+    /// Save current settings to persistent storage.
+    ///
+    /// Writes 0x01 to the SAVE register (0x20) to persist all current
+    /// configuration settings to non-volatile memory.
+    fn save_settings(&mut self) -> Result<(), Self::Error> {
+        self.write_register(constants::SAVE_REGISTER_ADDRESS, 0x01)?;
+        Ok(())
+    }
 
     /// Set enable bit
     fn enable(&mut self) -> Result<(), Self::Error> {
@@ -74,7 +128,10 @@ where
 
     /// Reboots device
     fn reboot(&mut self) -> Result<(), Self::Error> {
-        self.write_register(constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS, constants::REBOOT_COMMAND_VALUE)?;
+        self.write_register(
+            constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
+            constants::REBOOT_COMMAND_VALUE,
+        )?;
         Ok(())
     }
 
@@ -100,7 +157,20 @@ where
         Ok(SerialNumber(buffer))
     }
 
-    /// Reads distance, signal strength, temperature and timestamp
+    /// Perform a complete measurement reading from the sensor.
+    ///
+    /// # Returns
+    /// * `Ok(SensorReading)` - Structure containing distance, signal strength, temperature, and timestamp
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    ///
+    /// # Notes
+    /// Reads four 16-bit values from consecutive register pairs:
+    /// - Distance: Registers 0x00 (low byte) and 0x01 (high byte) in centimeters
+    /// - Signal Strength: Registers 0x02 (low byte) and 0x03 (high byte)
+    /// - Temperature: Registers 0x04 (low byte) and 0x05 (high byte) in 0.01°C units
+    /// - Timestamp: Registers 0x06 (low byte) and 0x07 (high byte) device ticks
+    ///
+    /// Temperature is automatically converted from hundredths of degrees Celsius to degrees Celsius.
     fn measure(&mut self) -> Result<crate::traits::SensorReading, Self::Error> {
         let distance = self.read_word(constants::DISTANCE_REGISTER_ADDRESS)?;
         let signal_strength = self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)?;
