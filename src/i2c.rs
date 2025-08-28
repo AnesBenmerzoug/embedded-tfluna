@@ -70,7 +70,7 @@ where
     /// * `Err(Error::InvalidParameter)` - if address is out of valid range
     /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
     pub fn set_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
-        if !(0x08..=0x77).contains(&address) {
+        if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE).contains(&address) {
             return Err(Error::InvalidParameter);
         }
         self.write_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
@@ -110,7 +110,7 @@ where
     /// Writes 0x01 to the SAVE register (0x20) to persist all current
     /// configuration settings to non-volatile memory.
     fn save_settings(&mut self) -> Result<(), Self::Error> {
-        self.write_register(constants::SAVE_REGISTER_ADDRESS, 0x01)?;
+        self.write_register(constants::SAVE_REGISTER_ADDRESS, constants::SAVE_COMMAND_VALUE)?;
         Ok(())
     }
 
