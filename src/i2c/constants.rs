@@ -2,44 +2,50 @@
 pub const DEFAULT_SLAVE_ADDRESS: u8 = 0x10;
 
 // Registers
-/// Distance measurement low byte register (0x00) - centimeters
+/// Distance measurement low byte register - centimeters - Read-only
 pub const DISTANCE_REGISTER_ADDRESS: u8 = 0x00;
-/// Signal strength measurement low byte register (0x02)
+/// Signal strength measurement low byte register - Read-only
 pub const SIGNAL_STRENGTH_REGISTER_ADDRESS: u8 = 0x02;
-/// Temperature measurement low byte register (0x04) - 0.01°C units
+/// Temperature measurement low byte register - 0.01°C units - Read-only
 pub const TEMPERATURE_REGISTER_ADDRESS: u8 = 0x04;
-/// Timestamp low byte register (0x06) - device ticks
+/// Timestamp low byte register - device ticks - Read-only
 pub const TIMESTAMP_REGISTER_ADDRESS: u8 = 0x06;
-/// Firmware revision number register (0x0A) - first of three version registers
+/// Error low byte register - Read-only
+pub const ERROR_REGISTER_ADDRESS: u8 = 0x08;
+/// Firmware revision number register - first of three version registers - Read-only
 pub const FIRMWARE_VERSION_REGISTER_ADDRESS: u8 = 0x0A;
-/// Serial number first byte register (0x10) - 14-byte ASCII code
+/// Serial number first byte register - 14-byte ASCII code - Read-only
 pub const SERIAL_NUMBER_REGISTER_ADDRESS: u8 = 0x10;
-/// Save settings command register (0x20)
+/// Ultra low power mode configuration register - Write-only
+pub const ULTRA_LOW_POWER_POWER_MODE: u8 = 0x1F;
+/// Save settings command register - Write-only
 pub const SAVE_REGISTER_ADDRESS: u8 = 0x20;
-/// Shutdown/reboot command register (0x21)
+/// Shutdown/reboot command register - Write-only
 pub const SHUTDOWN_REBOOT_REGISTER_ADDRESS: u8 = 0x21;
-/// I2C slave address configuration register (0x22)
+/// I2C slave address configuration register - Read/Write
 pub const SLAVE_ADDRESS_REGISTER_ADDRESS: u8 = 0x22;
-/// Ranging mode configuration register (0x23)
+/// Ranging mode configuration register - Read/Write
 pub const RANGING_MODE_REGISTER_ADDRESS: u8 = 0x23;
-/// Trigger measurement command register (0x24)
+/// Trigger one-shot measurement command register - Write-only
 pub const TRIGGER_REGISTER_ADDRESS: u8 = 0x24;
-/// Enable/disable device register (0x25)
+/// Enable/disable device register - Read/Write
 pub const ENABLE_REGISTER_ADDRESS: u8 = 0x25;
-/// Framerate configuration low byte register (0x26) - Hz
+/// Framerate configuration low byte register - Hz - Read/Write
 pub const FRAMERATE_REGISTER_ADDRESS: u8 = 0x26;
-/// Power mode configuration register (0x28)
+/// Low power mode configuration register - Read/Write
 pub const POWER_MODE_REGISTER_ADDRESS: u8 = 0x28;
-/// Restore factory defaults command register (0x29)
+/// Restore factory defaults command register - Write-only
 pub const RESTORE_FACTORY_DEFAULTS_REGISTER_ADDRESS: u8 = 0x29;
-/// Signal strength threshold low byte register (0x2A)
+/// Signal strength threshold low byte register - Read/Write
 pub const SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS: u8 = 0x2A;
-/// Dummy distance low byte register (0x2C) - centimeters
+/// Dummy distance low byte register - centimeters - Read/Write
 pub const DUMMY_DISTANCE_REGISTER_ADDRESS: u8 = 0x2C;
-/// Minimum distance low byte register (0x2E) - centimeters
+/// Minimum distance low byte register - centimeters - Read/Write
 pub const MINIMUM_DISTANCE_REGISTER_ADDRESS: u8 = 0x2E;
-/// Maximum distance low byte register (0x30) - centimeters
+/// Maximum distance low byte register - centimeters - Read/Write
 pub const MAXIMUM_DISTANCE_REGISTER_ADDRESS: u8 = 0x30;
+/// Signature lower byte register - 4-byte ASCII code - Read-only
+pub const SIGNATURE_REGISTER_ADDRESS: u8 = 0x3C;
 
 // Command values
 /// Value to write for saving current settings
