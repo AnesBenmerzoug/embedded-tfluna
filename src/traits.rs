@@ -146,29 +146,25 @@ pub trait TFLunaSync {
     /// * Used for device identification and validation.
     fn get_signature(&mut self) -> Result<Signature, Self::Error>;
 
-    /// Get the current I2C slave address of the device (I2C only)
+    /// Get the current I2C slave address of the device.
     ///
     /// # Returns
     /// * `Ok(u8)` - Current slave address
     /// * `Err(Self::Error)` - if there was an error
-    ///
-    /// # Notes
-    /// * I2C-specific functionality
-    fn get_slave_address(&mut self) -> Result<u8, Self::Error>;
+    fn get_i2c_slave_address(&mut self) -> Result<u8, Self::Error>;
 
-    /// Set the I2C slave address of the device (I2C only)
+    /// Set the I2C slave address of the device.
     ///
     /// # Arguments
-    /// * `address` - New slave address (must be in valid range)
+    /// * `address` - New slave address
     ///
     /// # Returns
-    /// * `Ok(())` - if operation was successful
+    /// * `Ok(())` - if address was set successfully
     /// * `Err(Self::Error)` - if there was an error
     ///
     /// # Notes
-    /// * I2C-specific functionality
     /// * Typically range [0x08, 0x77] for valid addresses
-    fn set_slave_address(&mut self, address: u8) -> Result<(), Self::Error>;
+    fn set_i2c_slave_address(&mut self, address: u8) -> Result<(), Self::Error>;
 
     /// Get the current power mode of the device
     ///

@@ -57,32 +57,7 @@ where
         let mut buffer = [0; 2];
         buffer[0] = self.read_register(start_register_address)?;
         buffer[1] = self.read_register(start_register_address + 1)?;
-        self.combine_buffer_into_word(&buffer)
-    }
-
-    /// Set the I2C slave address of the device.
-    ///
-    /// # Arguments
-    /// * `address` - New slave address (must be in range 0x08 to 0x77)
-    ///
-    /// # Returns
-    /// * `Ok(())` - if address was set successfully
-    /// * `Err(Error::InvalidParameter)` - if address is out of valid range
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
-    pub fn set_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
-        if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE).contains(&address) {
-            return Err(Error::InvalidParameter);
-        }
-        self.write_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
-    }
-
-    /// Get the current I2C slave address of the device.
-    ///
-    /// # Returns
-    /// * `Ok(u8)` - Current slave address
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
-    pub fn get_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
-        self.read_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS)
+        Ok(self.combine_buffer_into_word(&buffer))
     }
 }
 
@@ -156,6 +131,102 @@ where
         }
         Ok(SerialNumber(buffer))
     }
+    
+    fn get_signature(&mut self) -> Result<crate::traits::Signature, Self::Error> {
+        todo!()
+    }
+
+    /// Set the I2C slave address of the device.
+    ///
+    /// # Arguments
+    /// * `address` - New slave address
+    ///
+    /// # Returns
+    /// * `Ok(())` - if address was set successfully
+    /// * `Err(Error::InvalidParameter)` - if address is out of valid range
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    ///
+    /// # Notes
+    /// * Typically range [0x08, 0x77] for valid addresses
+    fn set_i2c_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
+        if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE).contains(&address) {
+            return Err(Error::InvalidParameter);
+        }
+        self.write_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
+    }
+
+    /// Get the current I2C slave address of the device.
+    ///
+    /// # Returns
+    /// * `Ok(u8)` - Current slave address
+    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    fn get_i2c_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
+        self.read_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS)
+    }
+    
+    fn get_power_mode(&mut self) -> Result<crate::traits::PowerMode, Self::Error> {
+        todo!()
+    }
+    
+    fn set_power_mode(&mut self, mode: crate::traits::PowerMode) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn wake_from_ultra_low_power(&mut self) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_ranging_mode(&mut self) -> Result<crate::traits::RangingMode, Self::Error> {
+        todo!()
+    }
+    
+    fn set_ranging_mode(&mut self, mode: crate::traits::RangingMode) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_framerate(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
+    
+    fn set_framerate(&mut self, framerate: u16) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_signal_strength_threshold(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
+    
+    fn set_signal_strength_threshold(&mut self, threshold: u16) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_dummy_distance(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
+    
+    fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_minimum_distance(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
+    
+    fn set_minimum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_maximum_distance(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
+    
+    fn set_maximum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
+        todo!()
+    }
+    
+    fn get_error(&mut self) -> Result<u16, Self::Error> {
+        todo!()
+    }
 
     /// Perform a complete measurement reading from the sensor.
     ///
@@ -182,6 +253,10 @@ where
             temperature,
             timestamp,
         })
+    }
+    
+    fn trigger_measurement(&mut self) -> Result<(), Self::Error> {
+        todo!()
     }
 }
 
