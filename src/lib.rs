@@ -3,4 +3,5 @@
 mod i2c;
 mod traits;
 
-pub use i2c::{constants, errors, TFLuna};
+pub use traits::TFLunaSync;
+pub use i2c::{constants::DEFAULT_SLAVE_ADDRESS, errors, TFLuna};

@@ -3,6 +3,7 @@ use embedded_hal::i2c::Error as I2CErrorTrait;
 #[derive(Clone, Copy, Debug)]
 pub enum Error<I2CError: I2CErrorTrait> {
     I2c(I2CError),
+    InvalidData,
     InvalidParameter,
     Other,
 }

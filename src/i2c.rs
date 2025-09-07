@@ -1,23 +1,34 @@
 pub mod constants;
 pub mod errors;
 
-use embedded_hal::i2c::{I2c, SevenBitAddress};
+use embedded_hal::{
+    delay::DelayNs,
+    i2c::{I2c as I2cTrait, SevenBitAddress},
+};
 
 use crate::i2c::errors::Error;
-use crate::traits::{FirmwareVersion, SensorReading, SerialNumber, TFLunaSync};
+use crate::traits::{
+    FirmwareVersion, PowerMode, RangingMode, SensorReading, SerialNumber, Signature, TFLunaSync,
+};
 
 #[derive(Debug)]
-pub struct TFLuna<I2C: I2c<SevenBitAddress>> {
+pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
     i2c: I2C,
     address: SevenBitAddress,
+    delay: D,
 }
 
-impl<I2C> TFLuna<I2C>
+impl<I2C, D> TFLuna<I2C, D>
 where
-    I2C: I2c<SevenBitAddress>,
+    I2C: I2cTrait<SevenBitAddress>,
+    D: DelayNs,
 {
-    pub fn new(i2c: I2C, address: SevenBitAddress) -> Result<Self, Error<I2C::Error>> {
-        let sensor = Self { i2c, address };
+    pub fn new(i2c: I2C, address: SevenBitAddress, delay: D) -> Result<Self, Error<I2C::Error>> {
+        let sensor = Self {
+            i2c,
+            address,
+            delay,
+        };
         Ok(sensor)
     }
 
@@ -52,18 +63,44 @@ where
     ///
     /// # Returns
     /// * Ok(u16) - Read and combined value from consecutive registers
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     fn read_word(&mut self, start_register_address: u8) -> Result<u16, Error<I2C::Error>> {
         let mut buffer = [0; 2];
         buffer[0] = self.read_register(start_register_address)?;
         buffer[1] = self.read_register(start_register_address + 1)?;
         Ok(self.combine_buffer_into_word(&buffer))
     }
+
+    /// Write word (two bytes) into two consecutive registers.
+    ///
+    /// # Arguments
+    /// * `start_register_address` - Address of first register. Second's register's address will be `start_register_address + 1`
+    ///
+    /// # Returns
+    /// * Ok(()) - Write and combined value from consecutive registers
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    ///
+    /// # Notes
+    /// - The value is stored as a 16-bit value across two registers in little-endian order.
+    /// - Low byte is written in register at start address.
+    /// - High byte is written in register at start address + 1.
+    fn write_word(
+        &mut self,
+        start_register_address: u8,
+        value: u16,
+    ) -> Result<(), Error<I2C::Error>> {
+        let low_byte = (value & 0xFF) as u8;
+        let high_byte = ((value >> 8) & 0xFF) as u8;
+        self.write_register(start_register_address, low_byte)?;
+        self.write_register(start_register_address + 1, high_byte)?;
+        Ok(())
+    }
 }
 
-impl<I2C> TFLunaSync for TFLuna<I2C>
+impl<I2C, D> TFLunaSync for TFLuna<I2C, D>
 where
-    I2C: I2c<SevenBitAddress>,
+    I2C: I2cTrait<SevenBitAddress>,
+    D: DelayNs,
 {
     type Error = Error<I2C::Error>;
 
@@ -85,7 +122,10 @@ where
     /// Writes 0x01 to the SAVE register (0x20) to persist all current
     /// configuration settings to non-volatile memory.
     fn save_settings(&mut self) -> Result<(), Self::Error> {
-        self.write_register(constants::SAVE_REGISTER_ADDRESS, constants::SAVE_COMMAND_VALUE)?;
+        self.write_register(
+            constants::SAVE_REGISTER_ADDRESS,
+            constants::SAVE_COMMAND_VALUE,
+        )?;
         Ok(())
     }
 
@@ -124,16 +164,27 @@ where
         Ok(version)
     }
 
-    fn get_serial_number(&mut self) -> Result<crate::traits::SerialNumber, Self::Error> {
+    fn get_serial_number(&mut self) -> Result<SerialNumber, Self::Error> {
         let mut buffer = [0; 14];
         for i in 0..14 {
             buffer[i] = self.read_register(constants::SERIAL_NUMBER_REGISTER_ADDRESS + i as u8)?;
         }
         Ok(SerialNumber(buffer))
     }
-    
-    fn get_signature(&mut self) -> Result<crate::traits::Signature, Self::Error> {
-        todo!()
+
+    /// Get the device signature ('L' 'U' 'N' 'A').
+    ///
+    /// # Returns
+    /// * `Ok([u8; 4])` - 4-byte ASCII signature
+    ///
+    /// # Notes
+    /// Reads 4 consecutive registers starting at 0x3C (0x3C through 0x3F).
+    fn get_signature(&mut self) -> Result<Signature, Self::Error> {
+        let mut buffer = [0; 4];
+        for i in 0..4 {
+            buffer[i] = self.read_register(constants::SIGNATURE_REGISTER_ADDRESS + i as u8)?;
+        }
+        Ok(Signature(buffer))
     }
 
     /// Set the I2C slave address of the device.
@@ -144,12 +195,14 @@ where
     /// # Returns
     /// * `Ok(())` - if address was set successfully
     /// * `Err(Error::InvalidParameter)` - if address is out of valid range
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     ///
     /// # Notes
     /// * Typically range [0x08, 0x77] for valid addresses
     fn set_i2c_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
-        if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE).contains(&address) {
+        if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE)
+            .contains(&address)
+        {
             return Err(Error::InvalidParameter);
         }
         self.write_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
@@ -159,71 +212,164 @@ where
     ///
     /// # Returns
     /// * `Ok(u8)` - Current slave address
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     fn get_i2c_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
         self.read_register(constants::SLAVE_ADDRESS_REGISTER_ADDRESS)
     }
-    
-    fn get_power_mode(&mut self) -> Result<crate::traits::PowerMode, Self::Error> {
-        todo!()
+
+    /// Get the current power mode of the device.
+    ///
+    /// # Returns
+    /// * `Ok(PowerMode)` - Current power mode
+    /// * `Err(Error::InvalidState)` if registers contain invalid values
+    ///
+    /// # Notes
+    /// Reading registers may wake up the device from ultra-low power mode.
+    /// Avoid frequent calls when ultra-low power mode is expected.
+    fn get_power_mode(&mut self) -> Result<PowerMode, Self::Error> {
+        let low_power = self.read_register(constants::POWER_MODE_REGISTER_ADDRESS)?;
+        let ultra_low_power = self.read_register(constants::ULTRA_LOW_POWER_POWER_MODE)?;
+
+        match (low_power, ultra_low_power) {
+            (0x00, 0x00) => Ok(PowerMode::Normal),
+            (0x01, 0x00) => Ok(PowerMode::PowerSaving),
+            (0x00, 0x01) => Ok(PowerMode::UltraLow),
+            _ => Err(Self::Error::InvalidData),
+        }
     }
-    
-    fn set_power_mode(&mut self, mode: crate::traits::PowerMode) -> Result<(), Self::Error> {
-        todo!()
+
+    /// Set the power mode of the device.
+    ///
+    /// # Arguments
+    /// * `mode` - [`PowerMode::Normal`], [`PowerMode::PowerSaving`], or [`PowerMode::UltraLow`]
+    ///
+    /// # Notes
+    /// - Power saving modes may reduce power consumption at the cost of performance
+    /// - Ultra-low power mode requires special 3-byte sequence and has restrictions
+    /// - Do not send setup commands while in ultra-low power mode
+    fn set_power_mode(&mut self, mode: PowerMode) -> Result<(), Self::Error> {
+        todo!();
     }
-    
+
     fn wake_from_ultra_low_power(&mut self) -> Result<(), Self::Error> {
         todo!()
     }
-    
-    fn get_ranging_mode(&mut self) -> Result<crate::traits::RangingMode, Self::Error> {
-        todo!()
+
+    /// Get the current ranging mode of the device.
+    ///
+    /// # Returns
+    /// * `Ok(RangingMode)` - Current ranging mode
+    /// * `Err(Error::InvalidData)` if register contains invalid value
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    fn get_ranging_mode(&mut self) -> Result<RangingMode, Self::Error> {
+        let mode = self.read_register(constants::RANGING_MODE_REGISTER_ADDRESS)?;
+        match mode {
+            constants::RANGING_MODE_CONTINUOUS_COMMAND_VALUE => Ok(RangingMode::Continuous),
+            constants::RANGING_MODE_TRIGGER_COMMAND_VALUE => Ok(RangingMode::Trigger),
+            _ => Err(Self::Error::InvalidData),
+        }
     }
-    
-    fn set_ranging_mode(&mut self, mode: crate::traits::RangingMode) -> Result<(), Self::Error> {
-        todo!()
+
+    /// Set the ranging mode of the device.
+    ///
+    /// # Arguments
+    /// * `mode` - [`RangingMode::Continuous`] or [`RangingMode::Trigger`]
+    ///
+    /// # Returns
+    /// * `Ok(())` - if ranging mode was set successfully.
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    ///
+    /// # Notes
+    /// In trigger mode, use [`trigger_measurement()`] to initiate measurements.
+    fn set_ranging_mode(&mut self, mode: RangingMode) -> Result<(), Self::Error> {
+        let mode_value = match mode {
+            RangingMode::Continuous => constants::RANGING_MODE_CONTINUOUS_COMMAND_VALUE,
+            RangingMode::Trigger => constants::RANGING_MODE_TRIGGER_COMMAND_VALUE,
+        };
+        self.write_register(constants::RANGING_MODE_REGISTER_ADDRESS, mode_value)?;
+        Ok(())
     }
-    
+
+    /// Get the current measurement framerate in Hz.
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Current framerate in Hz
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     fn get_framerate(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::FRAMERATE_REGISTER_ADDRESS)
     }
-    
+
+    /// Set the measurement framerate in Hz.
+    ///
+    /// # Arguments
+    /// * `framerate` - Desired framerate in Hz (only valid values)
+    ///
+    /// # Returns
+    /// * `Ok(())` - if framerate was set successfully.
+    /// * `Err(Error::InvalidParameter)` - if framerate is invalid.
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
+    ///
+    /// # Notes
+    /// - The framerate is stored as a 16-bit value across two registers.
+    /// - Only factors of 500Hz / n, where n in [2, 3, ...], are allowed.
     fn set_framerate(&mut self, framerate: u16) -> Result<(), Self::Error> {
-        todo!()
+        match framerate {
+            x if x < 500 && (500 % x) == 0 => {
+                self.write_word(constants::FRAMERATE_REGISTER_ADDRESS, framerate)
+            }
+            _ => Err(self::Error::InvalidParameter),
+        }
     }
-    
+
+    /// Get the current signal strength threshold.
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Current signal strength threshold value
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     fn get_signal_strength_threshold(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)
     }
-    
+
+    /// Set the signal strength threshold for valid measurements.
+    ///
+    /// # Arguments
+    /// * `threshold` - Minimum signal strength value for valid measurements.
+    ///
+    /// # Returns
+    /// * `Ok(())` - if signal strength threshold was set successfully.
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
+    ///
+    /// # Notes
+    /// Measurements with signal strength below this threshold may be
+    /// considered invalid or low quality.
     fn set_signal_strength_threshold(&mut self, threshold: u16) -> Result<(), Self::Error> {
-        todo!()
+        self.write_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS, threshold)
     }
-    
+
     fn get_dummy_distance(&mut self) -> Result<u16, Self::Error> {
         todo!()
     }
-    
+
     fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
         todo!()
     }
-    
+
     fn get_minimum_distance(&mut self) -> Result<u16, Self::Error> {
         todo!()
     }
-    
+
     fn set_minimum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
         todo!()
     }
-    
+
     fn get_maximum_distance(&mut self) -> Result<u16, Self::Error> {
         todo!()
     }
-    
+
     fn set_maximum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
         todo!()
     }
-    
+
     fn get_error(&mut self) -> Result<u16, Self::Error> {
         todo!()
     }
@@ -232,7 +378,7 @@ where
     ///
     /// # Returns
     /// * `Ok(SensorReading)` - Structure containing distance, signal strength, temperature, and timestamp
-    /// * `Err(Error::I2c(I2CError))` - if there is an I2C error
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     ///
     /// # Notes
     /// Reads four 16-bit values from consecutive register pairs:
@@ -242,7 +388,7 @@ where
     /// - Timestamp: Registers 0x06 (low byte) and 0x07 (high byte) device ticks
     ///
     /// Temperature is automatically converted from hundredths of degrees Celsius to degrees Celsius.
-    fn measure(&mut self) -> Result<crate::traits::SensorReading, Self::Error> {
+    fn measure(&mut self) -> Result<SensorReading, Self::Error> {
         let distance = self.read_word(constants::DISTANCE_REGISTER_ADDRESS)?;
         let signal_strength = self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)?;
         let temperature = self.read_word(constants::TEMPERATURE_REGISTER_ADDRESS)? as f32 / 100.0;
@@ -254,39 +400,45 @@ where
             timestamp,
         })
     }
-    
+
     fn trigger_measurement(&mut self) -> Result<(), Self::Error> {
         todo!()
     }
 }
 
-#[cfg(test)]
+
+#[cfg(all(test, not(target_arch = "riscv32imc-unknown-none-elf")))]
 mod test {
     extern crate std;
     use std::vec::Vec;
 
     use super::*;
-    use embedded_hal_mock::eh1::i2c::{Mock as I2cMock, Transaction as I2cTransaction};
+    use embedded_hal_mock::eh1::delay::StdSleep as Delay;
+    use embedded_hal_mock::eh1::i2c::{Mock as I2cTraitMock, Transaction as I2cTraitTransaction};
 
     /// Returns vector of i2c transaction expectations for an I2C read operation
-    fn read_expectations(register_address: u8, value: u8) -> Vec<I2cTransaction> {
+    fn read_expectations(register_address: u8, value: u8) -> Vec<I2cTraitTransaction> {
         let expectations = Vec::from([
-            I2cTransaction::write(
+            I2cTraitTransaction::write(
                 constants::DEFAULT_SLAVE_ADDRESS,
                 Vec::from([register_address]),
             ),
-            I2cTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([value])),
+            I2cTraitTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([value])),
         ]);
         expectations
     }
 
     /// Returns vector of i2c transaction expectations for an I2C write operation
-    fn write_expectations(register_address: u8, value: u8) -> Vec<I2cTransaction> {
-        let expectations = Vec::from([I2cTransaction::write(
+    fn write_expectations(register_address: u8, value: u8) -> Vec<I2cTraitTransaction> {
+        let expectations = Vec::from([I2cTraitTransaction::write(
             constants::DEFAULT_SLAVE_ADDRESS,
             Vec::from([register_address, value]),
         )]);
         expectations
+    }
+
+    fn setup(i2c: &mut I2cTraitMock) -> TFLuna<&mut I2cTraitMock, Delay> {
+        TFLuna::new(i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap()
     }
 
     #[test]
@@ -294,8 +446,8 @@ mod test {
         let mut expectations = Vec::new();
         expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 1));
         expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 0));
-        let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        let mut i2c = I2cTraitMock::new(&expectations);
+        let mut device = setup(&mut i2c);
         assert!(device.enable().is_ok());
         assert!(device.disable().is_ok());
         i2c.done();
@@ -307,8 +459,8 @@ mod test {
             constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
             constants::REBOOT_COMMAND_VALUE,
         );
-        let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        let mut i2c = I2cTraitMock::new(&expectations);
+        let mut device = setup(&mut i2c);
         assert!(device.reboot().is_ok());
         i2c.done();
     }
@@ -322,8 +474,8 @@ mod test {
                 i,
             ));
         }
-        let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        let mut i2c = I2cTraitMock::new(&expectations);
+        let mut device = setup(&mut i2c);
         let firmware_version = device.get_firmware_version();
         assert!(firmware_version.is_ok(), "{:?}", firmware_version);
         let expected_firmware_version = FirmwareVersion {
@@ -350,8 +502,8 @@ mod test {
                 i,
             ));
         }
-        let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        let mut i2c = I2cTraitMock::new(&expectations);
+        let mut device = setup(&mut i2c);
         let serial_number = device.get_serial_number();
         assert!(serial_number.is_ok(), "{:?}", serial_number);
         let expected_serial_number =
@@ -397,8 +549,8 @@ mod test {
                 value,
             ));
         }
-        let mut i2c = I2cMock::new(&expectations);
-        let mut device = TFLuna::new(&mut i2c, constants::DEFAULT_SLAVE_ADDRESS).unwrap();
+        let mut i2c = I2cTraitMock::new(&expectations);
+        let mut device = setup(&mut i2c);
         let sensor_reading = device.measure();
         assert!(sensor_reading.is_ok(), "{:?}", sensor_reading);
         let expected_sensor_reading = SensorReading {
