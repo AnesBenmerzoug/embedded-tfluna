@@ -13,6 +13,7 @@ rustflags = [
     "-C",
     "force-frame-pointers",
 ]
+# target = "riscv32imc-unknown-none-elf"
 
 [alias]
 integration-tests = "test --test integration --target riscv32imc-unknown-none-elf"
