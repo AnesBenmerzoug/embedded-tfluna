@@ -106,13 +106,26 @@ mod tests {
     #[test]
     fn test_ranging_mode(context: Context) {
         let mut tfluna = context.tfluna;
-        // Get ranging mode and expect it to be set to be Continuous by default
+        // Get ranging mode and expect it to be set to Continuous by default
         let ranging_mode = tfluna.get_ranging_mode().unwrap();
         assert_eq!(ranging_mode, RangingMode::Continuous);
         // Set ranging mode to trigger and expect it to be set
         tfluna.set_ranging_mode(RangingMode::Trigger).unwrap();
         let ranging_mode = tfluna.get_ranging_mode().unwrap();
         assert_eq!(ranging_mode, RangingMode::Trigger);
+    }
+
+    #[test]
+    fn test_framerate(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get framerate and expect it to be set to 100Hz by default
+        let framerate = tfluna.get_framerate().unwrap();
+        assert_eq!(framerate, 100);
+        // Set framerate to anohter value and expect it to be set
+        let new_framerate = 250;
+        tfluna.set_framerate(new_framerate).unwrap();
+        let framerate = tfluna.get_framerate().unwrap();
+        assert_eq!(framerate, new_framerate)
     }
 
     #[test]
