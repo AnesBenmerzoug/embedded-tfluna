@@ -141,6 +141,19 @@ mod tests {
     }
 
     #[test]
+    fn test_dummy_distance(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get dummy distance and expect it to be set to 100Hz by default
+        let dummy_distance = tfluna.get_dummy_distance().unwrap();
+        assert_eq!(dummy_distance, 0);
+        // Set dummy distance to another value and expect it to be set
+        let new_dummy_distance = 66;
+        tfluna.set_dummy_distance(new_dummy_distance).unwrap();
+        let dummy_distance = tfluna.get_dummy_distance().unwrap();
+        assert_eq!(dummy_distance, new_dummy_distance)
+    }
+
+    #[test]
     fn test_measure(context: Context) {
         let mut tfluna = context.tfluna;
         let measurement = tfluna.measure().unwrap();

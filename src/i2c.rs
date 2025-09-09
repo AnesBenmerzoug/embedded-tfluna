@@ -346,12 +346,24 @@ where
         self.write_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS, threshold)
     }
 
+    /// Get the current dummy distance value
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Current dummy distance value
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     fn get_dummy_distance(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS)
     }
 
+    /// Set the dummy distance value
+    ///
+    /// # Arguments
+    /// * `distance` - Dummy distance value for testing
+    ///
+    /// # Returns
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
-        todo!()
+        self.write_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS, distance)
     }
 
     fn get_minimum_distance(&mut self) -> Result<u16, Self::Error> {

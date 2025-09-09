@@ -264,10 +264,9 @@ pub trait TFLunaSync {
     ///
     /// # Arguments
     /// * `distance` - Dummy distance value for testing
-    ///
-    /// # Notes
-    /// * Used for calibration and testing
-    /// * Overrides actual measurements in certain modes
+    /// 
+    /// # Returns
+    /// * `Err(Self::Error)` - if there was an error
     fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error>;
 
     /// Get the current minimum distance setting
