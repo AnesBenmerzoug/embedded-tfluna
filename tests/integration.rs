@@ -132,10 +132,10 @@ mod tests {
         let mut tfluna = context.tfluna;
         // Get signal strength threshold and expect it to be set to 100Hz by default
         let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
-        assert_eq!(signal_strength_threshold, 100);
-        // Set signal strength threshold to anohter value and expect it to be set
+        assert_eq!(signal_strength_threshold, 6299);
+        // Set signal strength threshold to another value and expect it to be set
         let new_signal_strength_threshold = 250;
-        tfluna.set_framerate(new_framerate).unwrap();
+        tfluna.set_signal_strength_threshold(new_signal_strength_threshold).unwrap();
         let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
         assert_eq!(signal_strength_threshold, new_signal_strength_threshold)
     }
