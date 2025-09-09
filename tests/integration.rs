@@ -17,7 +17,6 @@ mod tests {
     use esp_hal::delay::Delay;
     use esp_hal::clock::CpuClock;
     use esp_hal::{i2c::master::{I2c, Config}, time::Rate};
-    use embedded_hal::i2c::AddressMode;
     use rtt_target::rprintln;
 
     use embedded_tfluna::{TFLuna, TFLunaSync, DEFAULT_SLAVE_ADDRESS, FirmwareVersion, Signature, SerialNumber, PowerMode, RangingMode};
@@ -126,6 +125,19 @@ mod tests {
         tfluna.set_framerate(new_framerate).unwrap();
         let framerate = tfluna.get_framerate().unwrap();
         assert_eq!(framerate, new_framerate)
+    }
+
+    #[test]
+    fn test_signal_strength_threshold(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get signal strength threshold and expect it to be set to 100Hz by default
+        let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
+        assert_eq!(signal_strength_threshold, 100);
+        // Set signal strength threshold to anohter value and expect it to be set
+        let new_signal_strength_threshold = 250;
+        tfluna.set_framerate(new_framerate).unwrap();
+        let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
+        assert_eq!(signal_strength_threshold, new_signal_strength_threshold)
     }
 
     #[test]
