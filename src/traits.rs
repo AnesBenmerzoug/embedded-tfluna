@@ -242,7 +242,7 @@ pub trait TFLunaSync {
     /// Set the signal strength threshold for valid measurements
     ///
     /// # Arguments
-    /// * `threshold` - Minimum signal strength for valid measurements
+    /// * `value` - Minimum signal strength for valid measurements
     ///
     /// # Returns
     /// * `Ok(())` - if operation was successful
@@ -251,7 +251,7 @@ pub trait TFLunaSync {
     /// # Notes
     /// * Measurements below threshold may be considered invalid
     /// * Helps filter low-quality or noisy readings
-    fn set_signal_strength_threshold(&mut self, threshold: u16) -> Result<(), Self::Error>;
+    fn set_signal_strength_threshold(&mut self, value: u16) -> Result<(), Self::Error>;
 
     /// Get the current dummy distance value
     ///
@@ -263,11 +263,11 @@ pub trait TFLunaSync {
     /// Set the dummy distance value for testing purposes
     ///
     /// # Arguments
-    /// * `distance` - Dummy distance value for testing
+    /// * `value` - Dummy distance value
     /// 
     /// # Returns
     /// * `Err(Self::Error)` - if there was an error
-    fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error>;
+    fn set_dummy_distance(&mut self, value: u16) -> Result<(), Self::Error>;
 
     /// Get the current minimum distance setting
     ///
@@ -279,7 +279,7 @@ pub trait TFLunaSync {
     /// Set the minimum valid distance measurement
     ///
     /// # Arguments
-    /// * `distance` - Minimum distance in appropriate units
+    /// * `value` - Minimum distance in appropriate units
     ///
     /// # Returns
     /// * `Ok(())` - if operation was successful
@@ -288,7 +288,7 @@ pub trait TFLunaSync {
     /// # Notes
     /// * Measurements below this distance may be filtered
     /// * Units depend on interface (mm for I2C, cm for UART typically)
-    fn set_minimum_distance(&mut self, distance: u16) -> Result<(), Self::Error>;
+    fn set_minimum_distance(&mut self, value: u16) -> Result<(), Self::Error>;
 
     /// Get the current maximum distance setting
     ///
@@ -300,7 +300,7 @@ pub trait TFLunaSync {
     /// Set the maximum valid distance measurement
     ///
     /// # Arguments
-    /// * `distance` - Maximum distance in appropriate units
+    /// * `value` - Maximum distance in appropriate units
     ///
     /// # Returns
     /// * `Ok(())` - if operation was successful
@@ -309,7 +309,7 @@ pub trait TFLunaSync {
     /// # Notes
     /// * Measurements above this distance may be filtered
     /// * Units depend on interface (mm for I2C, cm for UART typically)
-    fn set_maximum_distance(&mut self, distance: u16) -> Result<(), Self::Error>;
+    fn set_maximum_distance(&mut self, value: u16) -> Result<(), Self::Error>;
 
     /// Get the error code from the device
     ///

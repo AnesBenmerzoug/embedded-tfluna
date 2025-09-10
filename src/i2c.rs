@@ -312,10 +312,10 @@ where
     /// # Notes
     /// - The framerate is stored as a 16-bit value across two registers.
     /// - Only factors of 500Hz / n, where n in [2, 3, ...], are allowed.
-    fn set_framerate(&mut self, framerate: u16) -> Result<(), Self::Error> {
-        match framerate {
+    fn set_framerate(&mut self, value: u16) -> Result<(), Self::Error> {
+        match value {
             x if x < 500 && (500 % x) == 0 => {
-                self.write_word(constants::FRAMERATE_REGISTER_ADDRESS, framerate)
+                self.write_word(constants::FRAMERATE_REGISTER_ADDRESS, value)
             }
             _ => Err(self::Error::InvalidParameter),
         }
@@ -326,6 +326,10 @@ where
     /// # Returns
     /// * `Ok(u16)` - Current signal strength threshold value
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    /// 
+    /// # Notes
+    /// When Signal Strength < Signal Strength Threshold * 10,
+    /// then the returned distance is the dummy distance instead of the actual distance
     fn get_signal_strength_threshold(&mut self) -> Result<u16, Self::Error> {
         self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)
     }
@@ -333,17 +337,17 @@ where
     /// Set the signal strength threshold for valid measurements.
     ///
     /// # Arguments
-    /// * `threshold` - Minimum signal strength value for valid measurements.
+    /// * `value` - Minimum signal strength value for valid measurements.
     ///
     /// # Returns
     /// * `Ok(())` - if signal strength threshold was set successfully.
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     ///
     /// # Notes
-    /// Measurements with signal strength below this threshold may be
-    /// considered invalid or low quality.
-    fn set_signal_strength_threshold(&mut self, threshold: u16) -> Result<(), Self::Error> {
-        self.write_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS, threshold)
+    /// When Signal Strength < Signal Strength Threshold * 10,
+    /// then the returned distance is the dummy distance instead of the actual distance
+    fn set_signal_strength_threshold(&mut self, value: u16) -> Result<(), Self::Error> {
+        self.write_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS, value)
     }
 
     /// Get the current dummy distance value
@@ -362,24 +366,57 @@ where
     ///
     /// # Returns
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
-    fn set_dummy_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
-        self.write_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS, distance)
+    fn set_dummy_distance(&mut self, value: u16) -> Result<(), Self::Error> {
+        self.write_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS, value)
     }
 
+    /// Get the current maximum distance setting
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Current maximum distance
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     fn get_minimum_distance(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::MINIMUM_DISTANCE_REGISTER_ADDRESS)
     }
 
-    fn set_minimum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
-        todo!()
+    /// Set the minimum valid distance measurement
+    ///
+    /// # Arguments
+    /// * `value` - Minimum distance in appropriate units
+    ///
+    /// # Returns
+    /// * `Ok(())` - if operation was successful
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
+    ///
+    /// # Notes
+    /// * Measurements below this distance may be filtered
+    fn set_minimum_distance(&mut self, value: u16) -> Result<(), Self::Error> {
+        self.write_word(constants::MINIMUM_DISTANCE_REGISTER_ADDRESS, value)
     }
 
+    /// Get the current maximum distance setting
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Current maximum distance
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     fn get_maximum_distance(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::MAXIMUM_DISTANCE_REGISTER_ADDRESS)
     }
 
-    fn set_maximum_distance(&mut self, distance: u16) -> Result<(), Self::Error> {
-        todo!()
+    /// Set the maximum valid distance measurement
+    ///
+    /// # Arguments
+    /// * `value` - Maximum distance in appropriate units
+    ///
+    /// # Returns
+    /// * `Ok(())` - if operation was successful
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
+    ///
+    /// # Notes
+    /// * Measurements above this distance may be filtered
+    /// * Units depend on interface (mm for I2C, cm for UART typically)
+    fn set_maximum_distance(&mut self, value: u16) -> Result<(), Self::Error> {
+        self.write_word(constants::MAXIMUM_DISTANCE_REGISTER_ADDRESS, value)
     }
 
     fn get_error(&mut self) -> Result<u16, Self::Error> {

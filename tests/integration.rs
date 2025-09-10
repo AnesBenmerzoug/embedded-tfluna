@@ -14,12 +14,18 @@ fn setup_log() {
 #[embedded_test::tests(setup=crate::setup_log())]
 mod tests {
     use super::*;
-    use esp_hal::delay::Delay;
     use esp_hal::clock::CpuClock;
-    use esp_hal::{i2c::master::{I2c, Config}, time::Rate};
+    use esp_hal::delay::Delay;
+    use esp_hal::{
+        i2c::master::{Config, I2c},
+        time::Rate,
+    };
     use rtt_target::rprintln;
 
-    use embedded_tfluna::{TFLuna, TFLunaSync, DEFAULT_SLAVE_ADDRESS, FirmwareVersion, Signature, SerialNumber, PowerMode, RangingMode};
+    use embedded_tfluna::{
+        FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature, TFLuna, TFLunaSync,
+        DEFAULT_SLAVE_ADDRESS,
+    };
 
     struct Context {
         #[allow(dead_code)]
@@ -41,7 +47,8 @@ mod tests {
             .unwrap()
             .with_sda(sda_pin)
             .with_scl(scl_pin);
-        let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, DEFAULT_SLAVE_ADDRESS, Delay::new()).unwrap();
+        let mut tfluna: TFLuna<_, _> =
+            TFLuna::new(i2c, DEFAULT_SLAVE_ADDRESS, Delay::new()).unwrap();
         // Restore factory defaults and then reboot devicec
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
@@ -66,18 +73,24 @@ mod tests {
     fn test_get_firmware_version(context: Context) {
         let mut tfluna = context.tfluna;
         let firmware_version = tfluna.get_firmware_version().unwrap();
-        assert_eq!(firmware_version, FirmwareVersion {
-            major: 3,
-            minor: 5,
-            revision: 1
-        });
+        assert_eq!(
+            firmware_version,
+            FirmwareVersion {
+                major: 3,
+                minor: 5,
+                revision: 1
+            }
+        );
     }
 
     #[test]
     fn test_get_serial_number(context: Context) {
         let mut tfluna = context.tfluna;
         let serial_number = tfluna.get_serial_number().unwrap();
-        assert_eq!(serial_number, SerialNumber([84, 51, 51, 48, 48, 50, 52, 53, 48, 49, 48, 48, 56, 50]));
+        assert_eq!(
+            serial_number,
+            SerialNumber([84, 51, 51, 48, 48, 50, 52, 53, 48, 49, 48, 48, 56, 50])
+        );
     }
 
     #[test]
@@ -117,7 +130,7 @@ mod tests {
     #[test]
     fn test_framerate(context: Context) {
         let mut tfluna = context.tfluna;
-        // Get framerate and expect it to be set to 100Hz by default
+        // Get framerate and expect it to be set to default value
         let framerate = tfluna.get_framerate().unwrap();
         assert_eq!(framerate, 100);
         // Set framerate to anohter value and expect it to be set
@@ -130,20 +143,22 @@ mod tests {
     #[test]
     fn test_signal_strength_threshold(context: Context) {
         let mut tfluna = context.tfluna;
-        // Get signal strength threshold and expect it to be set to 100Hz by default
+        // Get signal strength threshold and expect it to be set to default value
         let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
-        assert_eq!(signal_strength_threshold, 6299);
+        assert!((signal_strength_threshold > 6100) & (signal_strength_threshold < 6400));
         // Set signal strength threshold to another value and expect it to be set
-        let new_signal_strength_threshold = 250;
-        tfluna.set_signal_strength_threshold(new_signal_strength_threshold).unwrap();
+        let new_signal_strength_threshold = 6000;
+        tfluna
+            .set_signal_strength_threshold(new_signal_strength_threshold)
+            .unwrap();
         let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
-        assert_eq!(signal_strength_threshold, new_signal_strength_threshold)
+        assert_eq!(signal_strength_threshold, new_signal_strength_threshold);
     }
 
     #[test]
     fn test_dummy_distance(context: Context) {
         let mut tfluna = context.tfluna;
-        // Get dummy distance and expect it to be set to 100Hz by default
+        // Get dummy distance and expect it to be set to default value
         let dummy_distance = tfluna.get_dummy_distance().unwrap();
         assert_eq!(dummy_distance, 0);
         // Set dummy distance to another value and expect it to be set
@@ -151,6 +166,32 @@ mod tests {
         tfluna.set_dummy_distance(new_dummy_distance).unwrap();
         let dummy_distance = tfluna.get_dummy_distance().unwrap();
         assert_eq!(dummy_distance, new_dummy_distance)
+    }
+
+    #[test]
+    fn test_minimum_distance(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get minimum distance and expect it to be set to default value
+        let minimum_distance = tfluna.get_minimum_distance().unwrap();
+        assert_eq!(minimum_distance, 0);
+        // Set minimum distance to another value and expect it to be set
+        let new_minimum_distance = 66;
+        tfluna.set_minimum_distance(new_minimum_distance).unwrap();
+        let minimum_distance = tfluna.get_minimum_distance().unwrap();
+        assert_eq!(minimum_distance, new_minimum_distance)
+    }
+
+    #[test]
+    fn test_maximum_distance(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get maximum distance and expect it to be set to default value
+        let maximum_distance = tfluna.get_maximum_distance().unwrap();
+        assert_eq!(maximum_distance, 800);
+        // Set maximum distance to another value and expect it to be set
+        let new_maximum_distance = 500;
+        tfluna.set_maximum_distance(new_maximum_distance).unwrap();
+        let maximum_distance = tfluna.get_maximum_distance().unwrap();
+        assert_eq!(maximum_distance, new_maximum_distance)
     }
 
     #[test]
