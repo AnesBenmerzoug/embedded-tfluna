@@ -195,6 +195,14 @@ mod tests {
     }
 
     #[test]
+    fn test_error(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Get error and expect it to be set to default value
+        let error = tfluna.get_error().unwrap();
+        assert_eq!(error, 0);
+    }
+
+    #[test]
     fn test_measure(context: Context) {
         let mut tfluna = context.tfluna;
         let measurement = tfluna.measure().unwrap();

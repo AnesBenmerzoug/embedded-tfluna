@@ -419,8 +419,13 @@ where
         self.write_word(constants::MAXIMUM_DISTANCE_REGISTER_ADDRESS, value)
     }
 
+    /// Get the error code from the device
+    ///
+    /// # Returns
+    /// * `Ok(u16)` - Error code value
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     fn get_error(&mut self) -> Result<u16, Self::Error> {
-        todo!()
+        self.read_word(constants::ERROR_REGISTER_ADDRESS)
     }
 
     /// Perform a complete measurement reading from the sensor.
