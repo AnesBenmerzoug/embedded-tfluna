@@ -2,18 +2,10 @@
 #![no_main]
 
 use esp_hal as _;
-use rtt_target::rtt_init_log;
-
-/// Sets up the logging before entering the test-body, so that embedded-test internal logs (e.g. Running Test <...>)  can also be printed.
-/// Note: you can also inline this method in the attribute. e.g. `#[embedded_test::tests(setup=rtt_target::rtt_init_log!())]`
-fn setup_log() {
-    rtt_init_log!();
-}
 
 #[cfg(test)]
-#[embedded_test::tests(setup=crate::setup_log())]
+#[embedded_test::tests(setup=rtt_target::rtt_init_log!())]
 mod tests {
-    use super::*;
     use esp_hal::clock::CpuClock;
     use esp_hal::delay::Delay;
     use esp_hal::{
@@ -28,8 +20,8 @@ mod tests {
     };
 
     struct Context {
-        #[allow(dead_code)]
         tfluna: TFLuna<I2c<'static, esp_hal::Blocking>, Delay>,
+        delay: Delay,
     }
 
     // init function which is called before every test
@@ -49,11 +41,13 @@ mod tests {
             .with_scl(scl_pin);
         let mut tfluna: TFLuna<_, _> =
             TFLuna::new(i2c, I2CAddress::default(), Delay::new()).unwrap();
+        let delay = Delay::new();
         // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
+        delay.delay_millis(100);
         tfluna.reboot().unwrap();
-        Delay::new().delay_millis(500);
-        Context { tfluna }
+        delay.delay_millis(500);
+        Context { tfluna, delay }
     }
 
     #[test]
@@ -205,10 +199,34 @@ mod tests {
     #[test]
     fn test_measure(context: Context) {
         let mut tfluna = context.tfluna;
+        // We take an initial measurement and make sure all values have appropriate values
         let measurement = tfluna.measure().unwrap();
         assert!(measurement.distance > 0);
         assert!(measurement.signal_strength > 0);
         assert!(measurement.temperature > 0.0);
         assert!(measurement.timestamp > 0);
+        // We wait for a bit and take a second measurement and expect both to be different
+        context.delay.delay_millis(100);
+        let second_measurement = tfluna.measure().unwrap();
+        assert_ne!(measurement, second_measurement)
+    }
+
+    #[test]
+    fn test_trigger_ranging_mode(context: Context) {
+        let mut tfluna = context.tfluna;
+        // We take an initial measurement
+        let initial_measurement = tfluna.measure().unwrap();
+        // Set ranging mode to trigger
+        tfluna.set_ranging_mode(RangingMode::Trigger).unwrap();
+        context.delay.delay_millis(100);
+        // We trigger the measurement, wait a bit and then read the measured values
+        tfluna.trigger_measurement().unwrap();
+        context.delay.delay_millis(100);
+        let first_measurement_after_trigger = tfluna.measure().unwrap();
+        assert_ne!(initial_measurement, first_measurement_after_trigger);
+        // We wait some time again and read without triggering the measurement
+        context.delay.delay_millis(100);
+        let second_measurement_after_trigger = tfluna.measure().unwrap();
+        assert_eq!(first_measurement_after_trigger, second_measurement_after_trigger);
     }
 }
