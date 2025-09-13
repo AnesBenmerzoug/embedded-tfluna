@@ -135,13 +135,13 @@ where
 
     /// Set enable bit
     fn enable(&mut self) -> Result<(), Self::Error> {
-        self.write_register(constants::ENABLE_REGISTER_ADDRESS, 1)?;
+        self.write_register(constants::ENABLE_REGISTER_ADDRESS, constants::ENABLE_COMMAND_VALUE)?;
         Ok(())
     }
 
     /// Unset enable bit
     fn disable(&mut self) -> Result<(), Self::Error> {
-        self.write_register(constants::ENABLE_REGISTER_ADDRESS, 0)?;
+        self.write_register(constants::ENABLE_REGISTER_ADDRESS, constants::DISABLE_COMMAND_VALUE)?;
         Ok(())
     }
 
@@ -459,8 +459,18 @@ where
         })
     }
 
+    /// Trigger a single measurement (only effective in trigger mode).
+    ///
+    /// # Returns
+    /// * `Ok(())` - if trigger was set successfully
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    ///
+    /// # Notes
+    /// * Only works when device is in [`RangingMode::Trigger`].
+    /// * Initiates immediate measurement in trigger mode.
     fn trigger_measurement(&mut self) -> Result<(), Self::Error> {
-        todo!()
+        self.write_register(constants::TRIGGER_REGISTER_ADDRESS, constants::TRIGGER_COMMAND_VALUE)?;
+        Ok(())
     }
 }
 
