@@ -331,7 +331,7 @@ where
     /// When Signal Strength < Signal Strength Threshold * 10,
     /// then the returned distance is the dummy distance instead of the actual distance
     fn get_signal_strength_threshold(&mut self) -> Result<u16, Self::Error> {
-        self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)
+        self.read_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS)
     }
 
     /// Set the signal strength threshold for valid measurements.
