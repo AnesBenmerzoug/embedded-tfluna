@@ -1,7 +1,14 @@
+//! This is a platform agnostic Rust driver for the [`TF-Luna`] LiDAR distance sensor,
+//! based on the [`embedded-hal`] traits.
+//!
+//! [`TF-Luna`]: https://en.benewake.com/TFLuna/index.html
+//! [`embedded-hal`]: https://github.com/rust-embedded/embedded-hal
+
 #![no_std]
 
-mod i2c;
+pub mod i2c;
 mod traits;
+mod types;
 
-pub use traits::{TFLunaSync, FirmwareVersion, SerialNumber, Signature, PowerMode, RangingMode};
-pub use i2c::{constants::DEFAULT_SLAVE_ADDRESS, errors, TFLuna};
+pub use traits::TFLunaSync;
+pub use types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature};

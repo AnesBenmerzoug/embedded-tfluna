@@ -23,8 +23,8 @@ mod tests {
     use rtt_target::rprintln;
 
     use embedded_tfluna::{
-        FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature, TFLuna, TFLunaSync,
-        DEFAULT_SLAVE_ADDRESS,
+        i2c::{I2CAddress, TFLuna, DEFAULT_SLAVE_ADDRESS},
+        FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature, TFLunaSync,
     };
 
     struct Context {
@@ -48,7 +48,7 @@ mod tests {
             .with_sda(sda_pin)
             .with_scl(scl_pin);
         let mut tfluna: TFLuna<_, _> =
-            TFLuna::new(i2c, DEFAULT_SLAVE_ADDRESS, Delay::new()).unwrap();
+            TFLuna::new(i2c, I2CAddress::default(), Delay::new()).unwrap();
         // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
