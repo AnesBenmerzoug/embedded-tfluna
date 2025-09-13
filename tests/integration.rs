@@ -49,7 +49,7 @@ mod tests {
             .with_scl(scl_pin);
         let mut tfluna: TFLuna<_, _> =
             TFLuna::new(i2c, DEFAULT_SLAVE_ADDRESS, Delay::new()).unwrap();
-        // Restore factory defaults and then reboot devicec
+        // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
         Delay::new().delay_millis(500);
@@ -145,9 +145,9 @@ mod tests {
         let mut tfluna = context.tfluna;
         // Get signal strength threshold and expect it to be set to default value
         let signal_strength_threshold = tfluna.get_signal_strength_threshold().unwrap();
-        assert!((signal_strength_threshold > 6100) & (signal_strength_threshold < 6400));
+        assert_eq!(signal_strength_threshold, 100);
         // Set signal strength threshold to another value and expect it to be set
-        let new_signal_strength_threshold = 6000;
+        let new_signal_strength_threshold = 600;
         tfluna
             .set_signal_strength_threshold(new_signal_strength_threshold)
             .unwrap();
@@ -186,9 +186,9 @@ mod tests {
         let mut tfluna = context.tfluna;
         // Get maximum distance and expect it to be set to default value
         let maximum_distance = tfluna.get_maximum_distance().unwrap();
-        assert_eq!(maximum_distance, 800);
+        assert_eq!(maximum_distance, 9000);
         // Set maximum distance to another value and expect it to be set
-        let new_maximum_distance = 500;
+        let new_maximum_distance = 2000;
         tfluna.set_maximum_distance(new_maximum_distance).unwrap();
         let maximum_distance = tfluna.get_maximum_distance().unwrap();
         assert_eq!(maximum_distance, new_maximum_distance)
