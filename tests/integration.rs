@@ -106,6 +106,17 @@ mod tests {
         let mut tfluna = context.tfluna;
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::Normal);
+        // Set power mode to Power Saving and expect it to be set
+        tfluna.set_power_mode(PowerMode::PowerSaving).unwrap();
+        context.delay.delay_millis(100);
+        let power_mode = tfluna.get_power_mode().unwrap();
+        assert_eq!(power_mode, PowerMode::PowerSaving);
+        // Set power mode to Normal and expect it to be set
+        tfluna.set_power_mode(PowerMode::Normal).unwrap();
+        context.delay.delay_millis(100);
+        let power_mode = tfluna.get_power_mode().unwrap();
+        assert_eq!(power_mode, PowerMode::Normal);
+
     }
 
     #[test]

@@ -256,7 +256,26 @@ where
     /// - Ultra-low power mode requires special 3-byte sequence and has restrictions
     /// - Do not send setup commands while in ultra-low power mode
     pub fn set_power_mode(&mut self, mode: PowerMode) -> Result<(), Error<I2C::Error>> {
-        todo!();
+        match mode {
+            PowerMode::Normal => {
+                // Set power mode to normal
+                self.write_byte(
+                    constants::POWER_MODE_REGISTER_ADDRESS,
+                    constants::NORMAL_POWER_MODE_COMMAND_VALUE,
+                )?;
+            }
+            PowerMode::PowerSaving => {
+                // Set low power mode to power saving and ensure ultra-low is off
+                self.write_byte(
+                    constants::POWER_MODE_REGISTER_ADDRESS,
+                    constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE,
+                )?;
+            }
+            PowerMode::UltraLow => {
+                todo!()
+            }
+        }
+        Ok(())
     }
 
     pub fn wake_from_ultra_low_power(&mut self) -> Result<(), Error<I2C::Error>> {
