@@ -15,8 +15,8 @@ mod tests {
     use rtt_target::rprintln;
 
     use embedded_tfluna::{
-        i2c::{I2CAddress, TFLuna, DEFAULT_SLAVE_ADDRESS},
-        FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature, TFLunaSync,
+        i2c::{Address, TFLuna, DEFAULT_SLAVE_ADDRESS},
+        types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature},
     };
 
     struct Context {
@@ -39,8 +39,7 @@ mod tests {
             .unwrap()
             .with_sda(sda_pin)
             .with_scl(scl_pin);
-        let mut tfluna: TFLuna<_, _> =
-            TFLuna::new(i2c, I2CAddress::default(), Delay::new()).unwrap();
+        let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, Address::default(), Delay::new()).unwrap();
         let delay = Delay::new();
         // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
@@ -98,7 +97,7 @@ mod tests {
     #[test]
     fn test_get_i2c_slave_address(context: Context) {
         let mut tfluna = context.tfluna;
-        let slave_address = tfluna.get_i2c_slave_address().unwrap();
+        let slave_address = tfluna.get_slave_address().unwrap();
         assert_eq!(slave_address, DEFAULT_SLAVE_ADDRESS);
     }
 
@@ -227,6 +226,9 @@ mod tests {
         // We wait some time again and read without triggering the measurement
         context.delay.delay_millis(100);
         let second_measurement_after_trigger = tfluna.measure().unwrap();
-        assert_eq!(first_measurement_after_trigger, second_measurement_after_trigger);
+        assert_eq!(
+            first_measurement_after_trigger,
+            second_measurement_after_trigger
+        );
     }
 }

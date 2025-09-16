@@ -1,26 +1,45 @@
+use embedded_hal::i2c::Error as I2CErrorTrait;
+
 use crate::i2c::constants::DEFAULT_SLAVE_ADDRESS;
 
 /// I2C device address
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub struct I2CAddress(pub(crate) u8);
+pub struct Address(pub(crate) u8);
 
 /// Default device address
-impl Default for I2CAddress {
+impl Default for Address {
     fn default() -> Self {
-        I2CAddress(DEFAULT_SLAVE_ADDRESS)
+        Address(DEFAULT_SLAVE_ADDRESS)
     }
 }
 
 /// Support custom (integer) addresses
-impl From<u8> for I2CAddress {
+impl From<u8> for Address {
     fn from(a: u8) -> Self {
-        I2CAddress(a)
+        Address(a)
     }
 }
 
 /// Support conversion of address to integer
-impl From<I2CAddress> for u8 {
-    fn from(a: I2CAddress) -> Self {
+impl From<Address> for u8 {
+    fn from(a: Address) -> Self {
         a.0
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum Error<I2CError: I2CErrorTrait> {
+    I2c(I2CError),
+    InvalidData,
+    InvalidParameter,
+    Other,
+}
+
+impl<I2CError> From<I2CError> for Error<I2CError>
+where
+    I2CError: I2CErrorTrait,
+{
+    fn from(value: I2CError) -> Self {
+        Error::I2c(value)
     }
 }

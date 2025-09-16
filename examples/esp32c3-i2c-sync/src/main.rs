@@ -7,7 +7,7 @@
 )]
 
 use defmt::info;
-use embedded_tfluna::{TFLunaSync, TFLuna, DEFAULT_SLAVE_ADDRESS};
+use embedded_tfluna::i2c::{Address, TFLuna};
 use esp_hal::clock::CpuClock;
 use esp_hal::delay::Delay;
 use esp_hal::main;
@@ -44,7 +44,7 @@ fn main() -> ! {
         .unwrap()
         .with_sda(sda_pin)
         .with_scl(scl_pin);
-    let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, DEFAULT_SLAVE_ADDRESS, Delay::new()).unwrap();
+    let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, Address::default(), Delay::new()).unwrap();
 
     // Restore factory defaults and then reboot device
     tfluna.restore_factory_defaults().unwrap();

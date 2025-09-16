@@ -7,8 +7,4 @@
 #![no_std]
 
 pub mod i2c;
-mod traits;
-mod types;
-
-pub use traits::TFLunaSync;
-pub use types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature};
+pub mod types;
