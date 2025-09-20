@@ -13,8 +13,8 @@ mod tests {
         i2c::master::{Config, I2c},
         time::Rate,
     };
-    use rtt_target::debug_rprintln;
     use esp_hal::gpio::{Input, InputConfig, Pull};
+    use rtt_target::debug_rprintln;
 
     use embedded_tfluna::{
         i2c::{Address, TFLuna, DEFAULT_SLAVE_ADDRESS},
@@ -24,6 +24,7 @@ mod tests {
     struct Context {
         tfluna: TFLuna<I2c<'static, esp_hal::Blocking>, Delay>,
         delay: Delay,
+        data_ready_pin: Input<'static>,
     }
 
     // init function which is called before every test
@@ -43,8 +44,7 @@ mod tests {
             .with_scl(scl_pin);
         let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, Address::default(), Delay::new()).unwrap();
         let delay = Delay::new();
-        let pin6 = peripherals.GPIO10;
-        let pin6 = Input::new(pin6, InputConfig::default().with_pull(Pull::None));
+        let data_ready_pin = Input::new(peripherals.GPIO10, InputConfig::default().with_pull(Pull::None));
 
         // Set power mode to Normal, mostly in case we are in ultra-low power mode
         tfluna.set_power_mode(PowerMode::Normal).unwrap();
@@ -52,7 +52,7 @@ mod tests {
         // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
-        Context { tfluna, delay }
+        Context { tfluna, delay, data_ready_pin }
         /*
         assert!(false);
         // If we are in ultra-low power mode, disable it first
@@ -294,6 +294,31 @@ mod tests {
         context.delay.delay_millis(100);
         let second_measurement = tfluna.measure().unwrap();
         assert_ne!(measurement, second_measurement)
+    }
+
+    #[test]
+    fn test_continuous_ranging_mode(context: Context) {
+        let mut tfluna = context.tfluna;
+        // Set ranging mode to continuous
+        tfluna.set_ranging_mode(RangingMode::Continuous).unwrap();
+        for i in 0..10 {
+            if context.data_ready_pin.is_high() {
+                debug_rprintln!("data ready pin is high after {}ms", i);
+                break;
+            }
+            context.delay.delay_millis(1);
+        }
+        assert!(context.data_ready_pin.is_high());
+        tfluna.measure().unwrap();
+        for i in 0..10 {
+            if context.data_ready_pin.is_low() {
+                debug_rprintln!("data ready pin is low after {}ms", i);
+                break;
+            }
+            context.delay.delay_millis(1);
+        }
+        assert!(context.data_ready_pin.is_low());
+        context.delay.delay_millis(10);
     }
 
     #[test]
