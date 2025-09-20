@@ -5,6 +5,7 @@ use crate::types::{
     FirmwareVersion, PowerMode, RangingMode, SensorReading, SerialNumber, Signature,
 };
 
+use embedded_hal::i2c::{Error as I2CError, ErrorKind};
 use embedded_hal::{
     delay::DelayNs,
     i2c::{I2c as I2cTrait, SevenBitAddress},
@@ -55,14 +56,9 @@ where
 
     /// Read the contents of a single register
     fn read_byte(&mut self, register_address: u8) -> Result<u8, Error<I2C::Error>> {
-        // Send register address first
-        self.i2c
-            .write(self.address.into(), &[register_address])
-            .map_err(Error::I2c)?;
-        // Read content of register
         let mut buffer = [0];
         self.i2c
-            .read(self.address.into(), &mut buffer)
+            .write_read(self.address.into(), &[register_address], &mut buffer)
             .map_err(Error::I2c)?;
         Ok(buffer[0])
     }
@@ -156,6 +152,8 @@ where
             constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
             constants::REBOOT_COMMAND_VALUE,
         )?;
+        // Wait for a second for the device to be ready again
+        self.delay.delay_ms(1000);
         Ok(())
     }
 
@@ -235,14 +233,22 @@ where
     /// Reading registers may wake up the device from ultra-low power mode.
     /// Avoid frequent calls when ultra-low power mode is expected.
     pub fn get_power_mode(&mut self) -> Result<PowerMode, Error<I2C::Error>> {
-        let low_power = self.read_byte(constants::POWER_MODE_REGISTER_ADDRESS)?;
-        let ultra_low_power = self.read_byte(constants::ULTRA_LOW_POWER_POWER_MODE)?;
+        let power_mode_value = self.read_byte(constants::POWER_MODE_REGISTER_ADDRESS);
 
-        match (low_power, ultra_low_power) {
-            (0x00, 0x00) => Ok(PowerMode::Normal),
-            (0x01, 0x00) => Ok(PowerMode::PowerSaving),
-            (0x00, 0x01) => Ok(PowerMode::UltraLow),
-            _ => Err(Error::<I2C::Error>::InvalidData),
+        match power_mode_value {
+            Ok(0x00) => Ok(PowerMode::Normal),
+            Ok(0x01) => Ok(PowerMode::PowerSaving),
+            Err(Error::<I2C::Error>::I2c(e)) => {
+                // Check if the I2C error is a NoAcknowledge error
+                if let ErrorKind::NoAcknowledge(_) = e.kind() {
+                    Ok(PowerMode::UltraLow)
+                } else {
+                    // Return the original I2C error for other error kinds
+                    Err(Error::I2c(e))
+                }
+            }
+            Ok(_) => Err(Error::InvalidData),
+            Err(e) => Err(e), // For non-I2C errors
         }
     }
 
@@ -258,28 +264,68 @@ where
     pub fn set_power_mode(&mut self, mode: PowerMode) -> Result<(), Error<I2C::Error>> {
         match mode {
             PowerMode::Normal => {
-                // Set power mode to normal
+                self.disable_ultra_low_power_mode()?;
                 self.write_byte(
                     constants::POWER_MODE_REGISTER_ADDRESS,
-                    constants::NORMAL_POWER_MODE_COMMAND_VALUE,
+                    constants::NORMAL_POWER_MODE_COMMAND_VALUE
                 )?;
+                self.delay.delay_ms(100);
             }
             PowerMode::PowerSaving => {
-                // Set low power mode to power saving and ensure ultra-low is off
+                self.disable_ultra_low_power_mode()?;
                 self.write_byte(
                     constants::POWER_MODE_REGISTER_ADDRESS,
                     constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE,
                 )?;
+                self.delay.delay_ms(100);
             }
             PowerMode::UltraLow => {
-                todo!()
+                self.enable_ultra_low_power_mode()?;
             }
         }
         Ok(())
     }
 
+    // Set ultra-low power mode, save settings and reboot
+    pub fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+        self.write_byte(
+            constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
+            constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
+        )?;
+        self.save_settings()?;
+        self.reboot()?;
+        Ok(())
+    }
+
+    pub fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+        self.wake_from_ultra_low_power().unwrap();
+        self.write_byte(
+            constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
+            constants::NORMAL_POWER_MODE_COMMAND_VALUE,
+        )?;
+        self.save_settings()?;
+        self.reboot()?;
+        Ok(())
+    }
+
     pub fn wake_from_ultra_low_power(&mut self) -> Result<(), Error<I2C::Error>> {
-        todo!()
+        // Wake up by reading any register
+        match self.read_byte(constants::DISTANCE_REGISTER_ADDRESS) {
+            Err(Error::<I2C::Error>::I2c(e)) => {
+                // Check if the I2C error is a NoAcknowledge error
+                if let ErrorKind::NoAcknowledge(_) = e.kind() {
+                    ()
+                } else {
+                    // Return the original I2C error for other error kinds
+                    return Err(Error::I2c(e))
+                }
+            }
+            Ok(_) => return Ok(()),
+            _ => return Err(Error::InvalidData),
+        }
+        // Wait at least 6ms after awakening as per manual
+        self.delay.delay_ms(6);
+        Ok(())
     }
 
     /// Get the current ranging mode of the device.
@@ -480,6 +526,11 @@ where
             temperature,
             timestamp,
         })
+    }
+
+    pub fn read_distance(&mut self) -> Result<u16, Error<I2C::Error>> {
+        let distance = self.read_word(constants::DISTANCE_REGISTER_ADDRESS)?;
+        Ok(distance)
     }
 
     /// Trigger a single measurement (only effective in trigger mode).

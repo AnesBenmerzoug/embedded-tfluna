@@ -17,7 +17,7 @@ pub const FIRMWARE_VERSION_REGISTER_ADDRESS: u8 = 0x0A;
 /// Serial number first byte register - 14-byte ASCII code - Read-only
 pub const SERIAL_NUMBER_REGISTER_ADDRESS: u8 = 0x10;
 /// Ultra low power mode configuration register - Write-only
-pub const ULTRA_LOW_POWER_POWER_MODE: u8 = 0x1F;
+pub const ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS: u8 = 0x1F;
 /// Save settings command register - Write-only
 pub const SAVE_REGISTER_ADDRESS: u8 = 0x20;
 /// Shutdown/reboot command register - Write-only
@@ -68,6 +68,8 @@ pub const DISABLE_COMMAND_VALUE: u8 = 0x00;
 pub const NORMAL_POWER_MODE_COMMAND_VALUE: u8 = 0x00;
 /// Value to write for setting power saving power mode
 pub const POWER_SAVING_POWER_MODE_COMMAND_VALUE: u8 = 0x01;
+/// Value to write for setting ultra-low power mode
+pub const ULTRA_LOWER_POWER_MODE_COMMAND_VALUE: u8 = 0x01; 
 
 // Other values
 pub const SLAVE_ADDRESS_MINIMUM_VALUE: u8 = 0x08;
