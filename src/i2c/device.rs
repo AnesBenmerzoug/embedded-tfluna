@@ -55,7 +55,7 @@ where
     }
 
     /// Read the contents of a single register
-    fn read_byte(&mut self, register_address: u8) -> Result<u8, Error<I2C::Error>> {
+    pub fn read_byte(&mut self, register_address: u8) -> Result<u8, Error<I2C::Error>> {
         let mut buffer = [0];
         self.i2c
             .write_read(self.address.into(), &[register_address], &mut buffer)
@@ -238,17 +238,22 @@ where
         match power_mode_value {
             Ok(0x00) => Ok(PowerMode::Normal),
             Ok(0x01) => Ok(PowerMode::PowerSaving),
-            Err(Error::<I2C::Error>::I2c(e)) => {
-                // Check if the I2C error is a NoAcknowledge error
-                if let ErrorKind::NoAcknowledge(_) = e.kind() {
-                    Ok(PowerMode::UltraLow)
-                } else {
-                    // Return the original I2C error for other error kinds
-                    Err(Error::I2c(e))
+            Ok(_) => Err(Error::InvalidData),
+            Err(e) => {
+                match e {
+                    Error::<I2C::Error>::I2c(e) => {
+                        // Check if the I2C error is a NoAcknowledge error
+                        if let ErrorKind::NoAcknowledge(_) = e.kind() {
+                            Ok(PowerMode::UltraLow)
+                        } else {
+                            // Return the original I2C error for other error kinds
+                            Err(Error::I2c(e))
+                        }
+                    },
+                    // All other errors
+                    _ => Err(e)
                 }
             }
-            Ok(_) => Err(Error::InvalidData),
-            Err(e) => Err(e), // For non-I2C errors
         }
     }
 
@@ -287,7 +292,7 @@ where
     }
 
     // Set ultra-low power mode, save settings and reboot
-    pub fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+    fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
         self.write_byte(
             constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
             constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
@@ -297,8 +302,8 @@ where
         Ok(())
     }
 
-    pub fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
-        self.wake_from_ultra_low_power().unwrap();
+    fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+        self.wake_from_ultra_low_power()?;
         self.write_byte(
             constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
             constants::NORMAL_POWER_MODE_COMMAND_VALUE,
@@ -311,21 +316,24 @@ where
     pub fn wake_from_ultra_low_power(&mut self) -> Result<(), Error<I2C::Error>> {
         // Wake up by reading any register
         match self.read_byte(constants::DISTANCE_REGISTER_ADDRESS) {
-            Err(Error::<I2C::Error>::I2c(e)) => {
-                // Check if the I2C error is a NoAcknowledge error
-                if let ErrorKind::NoAcknowledge(_) = e.kind() {
-                    ()
-                } else {
-                    // Return the original I2C error for other error kinds
-                    return Err(Error::I2c(e))
+            Ok(_) => Ok(()),
+            Err(e) => {
+                match e {
+                    Error::<I2C::Error>::I2c(e) => {
+                        // Check if the I2C error is a NoAcknowledge error
+                        if let ErrorKind::NoAcknowledge(_) = e.kind() {
+                            // Wait at least 6ms after awakening as per manual
+                            self.delay.delay_ms(6);
+                            Ok(())
+                        } else {
+                            // Return the original I2C error for other error kinds
+                            Err(Error::I2c(e))
+                        }
+                    },
+                    _ => Err(Error::InvalidData)
                 }
             }
-            Ok(_) => return Ok(()),
-            _ => return Err(Error::InvalidData),
         }
-        // Wait at least 6ms after awakening as per manual
-        self.delay.delay_ms(6);
-        Ok(())
     }
 
     /// Get the current ranging mode of the device.
