@@ -14,7 +14,7 @@ mod tests {
         time::Rate,
     };
     use esp_hal::gpio::{Input, InputConfig, Pull};
-    use rtt_target::debug_rprintln;
+    use log::debug;
 
     use embedded_tfluna::{
         i2c::{Address, TFLuna, DEFAULT_SLAVE_ADDRESS},
@@ -30,7 +30,7 @@ mod tests {
     // init function which is called before every test
     #[init]
     fn init() -> Context {
-        debug_rprintln!("Initialization");
+        debug!("Initialization");
         let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let peripherals = esp_hal::init(config);
         // I2C SDA (Data) Pin
@@ -49,46 +49,13 @@ mod tests {
         // Set power mode to Normal, mostly in case we are in ultra-low power mode
         tfluna.set_power_mode(PowerMode::Normal).unwrap();
 
+        // Make sure we are in normal power mode
+        assert_eq!(tfluna.get_power_mode().unwrap(), PowerMode::Normal);
+
         // Restore factory defaults and then reboot device
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
         Context { tfluna, delay, data_ready_pin }
-        /*
-        assert!(false);
-        // If we are in ultra-low power mode, disable it first
-        // Restore factory defaults and then reboot device
-        // assert_eq!(PowerMode::UltraLow, tfluna.get_power_mode().unwrap());
-        debug_rprintln!("+++++ wake_from_ultra_low_power");
-        debug_rprintln!("Pin 6 is low? {}", pin6.is_low());
-        debug_rprintln!("Pin 6 is high? {}", pin6.is_high());
-        if pin6.is_high() {
-            tfluna.read_distance().unwrap();
-        }
-        assert!(pin6.is_low());
-        delay.delay_millis(1);
-        debug_rprintln!("Pin 6 is low");
-        tfluna.wake_from_ultra_low_power().unwrap();
-        delay.delay_millis(1);
-
-        tfluna.wake_from_ultra_low_power().unwrap();
-        delay.delay_millis(1);
-        for i in 0..1000 {
-            if pin6.is_high() {
-                debug_rprintln!("Pin 6 went high after {}ms", i);
-                delay.delay_millis(100);
-                assert!(pin6.is_high());
-                tfluna.read_distance().unwrap();
-                break;
-            }
-            debug_rprintln!("Pin 6 still not high yet after {}ms", i);
-            delay.delay_millis(1);
-        }
-        assert!(pin6.is_high());
-        debug_rprintln!("+++++ measure");
-        tfluna.measure().unwrap();
-        delay.delay_millis(10);
-        tfluna.disable_ultra_low_power_mode().unwrap();
-        */
     }
 
     #[test]
@@ -147,47 +114,47 @@ mod tests {
     fn test_power_mode(context: Context) {
         let mut tfluna = context.tfluna;
 
-        debug_rprintln!("Reading default power mode");
+        debug!("Reading default power mode");
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::Normal);
 
-        debug_rprintln!("Transitioning power mode from Normal to Power Saving");
+        debug!("Transitioning power mode from Normal to Power Saving");
         tfluna.set_power_mode(PowerMode::PowerSaving).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::PowerSaving);
 
-        debug_rprintln!("Transitioning power mode from Power Saving to Normal");
+        debug!("Transitioning power mode from Power Saving to Normal");
         tfluna.set_power_mode(PowerMode::Normal).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::Normal);
 
-        debug_rprintln!("Transitioning power mode from Normal to Ultra-low");
+        debug!("Transitioning power mode from Normal to Ultra-low");
         tfluna.set_power_mode(PowerMode::UltraLow).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::UltraLow);
 
-        debug_rprintln!("Transitioning power mode from Ultra-low to Normal");
+        debug!("Transitioning power mode from Ultra-low to Normal");
         tfluna.set_power_mode(PowerMode::Normal).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::Normal);
 
-        debug_rprintln!("Transitioning power mode from Normal to Power Saving");
+        debug!("Transitioning power mode from Normal to Power Saving");
         tfluna.set_power_mode(PowerMode::PowerSaving).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::PowerSaving);
 
-        debug_rprintln!("Transitioning power mode from Power Saving to Ultra-low");
+        debug!("Transitioning power mode from Power Saving to Ultra-low");
         tfluna.set_power_mode(PowerMode::UltraLow).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
         assert_eq!(power_mode, PowerMode::UltraLow);
 
-        debug_rprintln!("Transitioning power mode from Ultra-low to Power Saving");
+        debug!("Transitioning power mode from Ultra-low to Power Saving");
         tfluna.set_power_mode(PowerMode::PowerSaving).unwrap();
         context.delay.delay_millis(100);
         let power_mode = tfluna.get_power_mode().unwrap();
@@ -303,7 +270,7 @@ mod tests {
         tfluna.set_ranging_mode(RangingMode::Continuous).unwrap();
         for i in 0..10 {
             if context.data_ready_pin.is_high() {
-                debug_rprintln!("data ready pin is high after {}ms", i);
+                debug!("data ready pin is high after {}ms", i);
                 break;
             }
             context.delay.delay_millis(1);
@@ -312,7 +279,7 @@ mod tests {
         tfluna.measure().unwrap();
         for i in 0..10 {
             if context.data_ready_pin.is_low() {
-                debug_rprintln!("data ready pin is low after {}ms", i);
+                debug!("data ready pin is low after {}ms", i);
                 break;
             }
             context.delay.delay_millis(1);
@@ -341,5 +308,47 @@ mod tests {
             first_measurement_after_trigger,
             second_measurement_after_trigger
         );
+    }
+
+    // This test is ignored for now because I couldn't make it work
+    // The ultra-low power mode seems to be very finicky.
+    #[test]
+    #[ignore]
+    fn test_ultra_low_power_mode_read_measurement(context: Context) {
+        let mut tfluna = context.tfluna;
+
+        debug!("Setting ultra-low power mode");
+        tfluna.set_power_mode(PowerMode::UltraLow).unwrap();
+
+        debug!("Waking up from ultra lower power sleep");
+        tfluna.wake_from_ultra_low_power().unwrap();
+
+        debug!("Waiting for data ready signal to go high");
+        for i in 0..10 {
+            if context.data_ready_pin.is_high() {
+                debug!("data ready pin is high after {}ms", i);
+                break;
+            }
+            context.delay.delay_millis(1);
+        }
+        assert!(context.data_ready_pin.is_high());
+
+        debug!("Reading distance");
+        tfluna.read_distance().unwrap();
+        context.delay.delay_millis(10);
+
+        debug!("Waiting for data ready signal to go low");
+        for i in 0..100 {
+            if context.data_ready_pin.is_low() {
+                debug!("data ready pin is low after {}ms", i);
+                break;
+            }
+            context.delay.delay_millis(1);
+        }
+        assert!(context.data_ready_pin.is_low());
+
+        debug!("Setting power mode to normal");
+        tfluna.set_power_mode(PowerMode::Normal).unwrap();
+        context.delay.delay_millis(1);
     }
 }
