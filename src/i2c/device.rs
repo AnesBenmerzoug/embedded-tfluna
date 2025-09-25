@@ -43,8 +43,7 @@ where
     /// # Returns
     /// * `u16` - Combined 16-bit value
     fn combine_buffer_into_word(&self, buffer: &[u8; 2]) -> u16 {
-        let value = buffer[0] as u16 + ((buffer[1] as u16) << 8);
-        value
+        buffer[0] as u16 + ((buffer[1] as u16) << 8)
     }
 
     fn read<const N: usize>(
