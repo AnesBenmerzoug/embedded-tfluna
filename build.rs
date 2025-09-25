@@ -1,9 +1,15 @@
 fn main() {
-    linker_be_nice();
-    // esp-hal specific
-    println!("cargo:rustc-link-arg=-Tlinkall.x");
-    // add linker script for embedded-test!!
-    println!("cargo::rustc-link-arg-tests=-Tembedded-test.x");
+    match std::env::var("CARGO_CFG_TARGET_ARCH") {
+        Ok(target_arch) if target_arch == "riscv32imc-unknown-none-elf" => {
+            linker_be_nice();
+            // esp-hal specific
+            println!("cargo:rustc-link-arg=-Tlinkall.x");
+            // add linker script for embedded-test!!
+            println!("cargo::rustc-link-arg-tests=-Tembedded-test.x");
+        }
+        Ok(_) => (),
+        Err(_) => panic!(),
+    }
 }
 
 fn linker_be_nice() {
