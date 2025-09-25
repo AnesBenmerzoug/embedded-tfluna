@@ -47,7 +47,11 @@ where
         value
     }
 
-    fn read<const N: usize>(&mut self, register: Register, buffer: &mut [u8; N]) -> Result<(), Error<I2C::Error>> {
+    fn read<const N: usize>(
+        &mut self,
+        register: Register,
+        buffer: &mut [u8; N],
+    ) -> Result<(), Error<I2C::Error>> {
         self.i2c
             .write_read(self.address.into(), &[register as u8], buffer)
             .map_err(Error::I2c)?;
@@ -55,8 +59,7 @@ where
     }
 
     fn write<const N: usize>(&mut self, buffer: &[u8; N]) -> Result<(), Error<I2C::Error>> {
-        self.i2c
-            .write(self.address.into(), buffer)?;
+        self.i2c.write(self.address.into(), buffer)?;
         Ok(())
     }
 
@@ -99,11 +102,7 @@ where
     /// - The value is stored as a 16-bit value across two registers in little-endian order.
     /// - Low byte is written in register at start address.
     /// - High byte is written in register at start address + 1.
-    fn write_word(
-        &mut self,
-        register: Register,
-        value: u16,
-    ) -> Result<(), Error<I2C::Error>> {
+    fn write_word(&mut self, register: Register, value: u16) -> Result<(), Error<I2C::Error>> {
         let low_byte = (value & 0xFF) as u8;
         let high_byte = ((value >> 8) & 0xFF) as u8;
         self.write(&[register as u8, low_byte, high_byte])
@@ -126,34 +125,22 @@ where
     /// Writes 0x01 to the SAVE register (0x20) to persist all current
     /// configuration settings to non-volatile memory.
     pub fn save_settings(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(
-            Register::Save,
-            constants::SAVE_COMMAND_VALUE,
-        )
+        self.write_byte(Register::Save, constants::SAVE_COMMAND_VALUE)
     }
 
     /// Set enable bit
     pub fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(
-            Register::Enable,
-            constants::ENABLE_COMMAND_VALUE,
-        )
+        self.write_byte(Register::Enable, constants::ENABLE_COMMAND_VALUE)
     }
 
     /// Unset enable bit
     pub fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(
-            Register::Enable,
-            constants::DISABLE_COMMAND_VALUE,
-        )
+        self.write_byte(Register::Enable, constants::DISABLE_COMMAND_VALUE)
     }
 
     /// Reboots device
     pub fn reboot(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(
-            Register::ShutdownReboot,
-            constants::REBOOT_COMMAND_VALUE,
-        )
+        self.write_byte(Register::ShutdownReboot, constants::REBOOT_COMMAND_VALUE)
     }
 
     pub fn get_firmware_version(&mut self) -> Result<FirmwareVersion, Error<I2C::Error>> {
@@ -242,9 +229,9 @@ where
                             // Return the original I2C error for other error kinds
                             Err(Error::I2c(e))
                         }
-                    },
+                    }
                     // All other errors
-                    _ => Err(e)
+                    _ => Err(e),
                 }
             }
         }
@@ -280,39 +267,37 @@ where
     fn set_normal_power_mode(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
             Register::PowerSavingMode,
-            constants::NORMAL_POWER_MODE_COMMAND_VALUE
+            constants::NORMAL_POWER_MODE_COMMAND_VALUE,
         )
     }
 
     fn set_power_saving_mode(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
             Register::PowerSavingMode,
-            constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE
+            constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE,
         )
     }
 
     // Set ultra-low power mode, save settings and reboot
     fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write(
-            &[
-                Register::UltraLowPowerMode as u8, 
-                constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
-                constants::SAVE_COMMAND_VALUE,
-                constants::REBOOT_COMMAND_VALUE
+        self.write(&[
+            Register::UltraLowPowerMode as u8,
+            constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
+            constants::SAVE_COMMAND_VALUE,
+            constants::REBOOT_COMMAND_VALUE,
         ])?;
         // Wait for a second for the device to be ready again
         self.delay.delay_ms(1000);
         Ok(())
     }
 
-    fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+    fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>> {
         self.wake_from_ultra_low_power()?;
-        self.write::<4>(
-            &[
-                Register::UltraLowPowerMode as u8, 
-                constants::NORMAL_POWER_MODE_COMMAND_VALUE,
-                constants::SAVE_COMMAND_VALUE,
-                constants::REBOOT_COMMAND_VALUE
+        self.write::<4>(&[
+            Register::UltraLowPowerMode as u8,
+            constants::NORMAL_POWER_MODE_COMMAND_VALUE,
+            constants::SAVE_COMMAND_VALUE,
+            constants::REBOOT_COMMAND_VALUE,
         ])?;
         // Wait for a second for the device to be ready again
         self.delay.delay_ms(1000);
@@ -335,8 +320,8 @@ where
                             // Return the original I2C error for other error kinds
                             Err(Error::I2c(e))
                         }
-                    },
-                    _ => Err(Error::Other)
+                    }
+                    _ => Err(Error::Other),
                 }
             }
         }
@@ -553,10 +538,7 @@ where
     /// * Only works when device is in [`RangingMode::Trigger`].
     /// * Initiates immediate measurement in trigger mode.
     pub fn trigger_measurement(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(
-            Register::Trigger,
-            constants::TRIGGER_COMMAND_VALUE,
-        )?;
+        self.write_byte(Register::Trigger, constants::TRIGGER_COMMAND_VALUE)?;
         Ok(())
     }
 }

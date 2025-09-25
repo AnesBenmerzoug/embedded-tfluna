@@ -19,7 +19,7 @@ pub const NORMAL_POWER_MODE_COMMAND_VALUE: u8 = 0;
 /// Value to write for setting power saving power mode
 pub const POWER_SAVING_POWER_MODE_COMMAND_VALUE: u8 = 1;
 /// Value to write for setting ultra-low power mode
-pub const ULTRA_LOWER_POWER_MODE_COMMAND_VALUE: u8 = 1; 
+pub const ULTRA_LOWER_POWER_MODE_COMMAND_VALUE: u8 = 1;
 
 // Other values
 pub const SLAVE_ADDRESS_MINIMUM_VALUE: u8 = 0x08;

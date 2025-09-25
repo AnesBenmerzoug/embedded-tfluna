@@ -22,7 +22,7 @@ pub enum RangingMode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PowerMode {
     /// Normal power mode with largest power consumption
-    /// 
+    ///
     /// When the power is supplied with 5V, the power consumption is about 350mW.
     Normal,
     /// Power saving mode with second largest power consumption

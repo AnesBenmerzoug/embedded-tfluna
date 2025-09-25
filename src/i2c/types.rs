@@ -44,7 +44,6 @@ where
     }
 }
 
-
 #[derive(Debug, Copy, Clone)]
 pub enum Register {
     /// Distance measurement low byte register - centimeters - Read-only

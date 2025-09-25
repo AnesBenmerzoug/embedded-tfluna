@@ -17,8 +17,8 @@ mod tests {
     use log::debug;
 
     use embedded_tfluna::{
-        i2c::{Address, TFLuna, DEFAULT_SLAVE_ADDRESS},
-        types::{FirmwareVersion, RangingMode, PowerMode, Signature, SerialNumber},
+        i2c::{Address, DEFAULT_SLAVE_ADDRESS, TFLuna},
+        types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature},
     };
 
     struct Context {
@@ -66,7 +66,7 @@ mod tests {
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
         delay.delay_millis(1000);
-        
+
         Context {
             tfluna,
             delay,
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn test_continuous_ranging_mode(context: Context) {
         let mut tfluna = context.tfluna;
-        
+
         debug!("Set ranging mode to continuous");
         tfluna.set_ranging_mode(RangingMode::Continuous).unwrap();
         context.delay.delay_millis(500);
