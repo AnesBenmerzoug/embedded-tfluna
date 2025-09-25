@@ -14,14 +14,20 @@ pub struct Signature(pub [u8; 4]);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RangingMode {
-    Continuous,
-    Trigger,
+    Continuous = 0,
+    Trigger = 1,
 }
 
+/// Enum containing the different power modes of the TF-Luna
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PowerMode {
+    /// Normal power mode with largest power consumption
+    /// 
+    /// When the power is supplied with 5V, the power consumption is about 350mW.
     Normal,
+    /// Power saving mode with second largest power consumption
     PowerSaving,
+    /// Ultra-low power mode with lowest power consumption
     UltraLow,
 }
 
@@ -37,4 +43,5 @@ pub struct SensorReading {
     pub signal_strength: u16,
     pub temperature: f32,
     pub timestamp: u16,
+    pub error: u16,
 }

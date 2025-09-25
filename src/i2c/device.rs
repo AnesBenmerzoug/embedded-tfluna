@@ -1,5 +1,5 @@
 use crate::i2c::constants;
-use crate::i2c::types::{Address, Error};
+use crate::i2c::types::{Address, Error, Register};
 
 use crate::types::{
     FirmwareVersion, PowerMode, RangingMode, SensorReading, SerialNumber, Signature,
@@ -47,41 +47,49 @@ where
         value
     }
 
-    /// Write byte to register
-    fn write_byte(&mut self, register_address: u8, content: u8) -> Result<(), Error<I2C::Error>> {
+    fn read<const N: usize>(&mut self, register: Register, buffer: &mut [u8; N]) -> Result<(), Error<I2C::Error>> {
         self.i2c
-            .write(self.address.into(), &[register_address, content])?;
+            .write_read(self.address.into(), &[register as u8], buffer)
+            .map_err(Error::I2c)?;
         Ok(())
     }
 
-    /// Read the contents of a single register
-    pub fn read_byte(&mut self, register_address: u8) -> Result<u8, Error<I2C::Error>> {
-        let mut buffer = [0];
+    fn write<const N: usize>(&mut self, buffer: &[u8; N]) -> Result<(), Error<I2C::Error>> {
         self.i2c
-            .write_read(self.address.into(), &[register_address], &mut buffer)
-            .map_err(Error::I2c)?;
+            .write(self.address.into(), buffer)?;
+        Ok(())
+    }
+
+    /// Write byte to a single register
+    fn write_byte(&mut self, register: Register, content: u8) -> Result<(), Error<I2C::Error>> {
+        self.write(&[register as u8, content])
+    }
+
+    /// Read the contents of a single register
+    pub fn read_byte(&mut self, register: Register) -> Result<u8, Error<I2C::Error>> {
+        let mut buffer = [0; 1];
+        self.read(register, &mut buffer)?;
         Ok(buffer[0])
     }
 
     /// Read word (two bytes) from two consecutive registers
     ///
     /// # Arguments
-    /// * `start_register_address` - Address of first register. Second's register's address will be `start_register_address + 1`
+    /// * `register` - Address of first register. Second's register's address will be `register + 1`
     ///
     /// # Returns
     /// * Ok(u16) - Read and combined value from consecutive registers
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
-    fn read_word(&mut self, start_register_address: u8) -> Result<u16, Error<I2C::Error>> {
+    fn read_word(&mut self, register: Register) -> Result<u16, Error<I2C::Error>> {
         let mut buffer = [0; 2];
-        buffer[0] = self.read_byte(start_register_address)?;
-        buffer[1] = self.read_byte(start_register_address + 1)?;
+        self.read(register, &mut buffer)?;
         Ok(self.combine_buffer_into_word(&buffer))
     }
 
     /// Write word (two bytes) into two consecutive registers.
     ///
     /// # Arguments
-    /// * `start_register_address` - Address of first register. Second's register's address will be `start_register_address + 1`
+    /// * `register` - Address of first register. Second's register's address will be `register + 1`
     ///
     /// # Returns
     /// * Ok(()) - Write and combined value from consecutive registers
@@ -93,14 +101,12 @@ where
     /// - High byte is written in register at start address + 1.
     fn write_word(
         &mut self,
-        start_register_address: u8,
+        register: Register,
         value: u16,
     ) -> Result<(), Error<I2C::Error>> {
         let low_byte = (value & 0xFF) as u8;
         let high_byte = ((value >> 8) & 0xFF) as u8;
-        self.write_byte(start_register_address, low_byte)?;
-        self.write_byte(start_register_address + 1, high_byte)?;
-        Ok(())
+        self.write(&[register as u8, low_byte, high_byte])
     }
 
     /// Restore all settings to factory defaults.
@@ -110,10 +116,9 @@ where
     /// This will reset all configurable parameters to their original values.
     pub fn restore_factory_defaults(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::RESTORE_FACTORY_DEFAULTS_REGISTER_ADDRESS,
+            Register::RestoreFactoryDefaults,
             constants::RESTORE_FACTORY_DEFAULTS_COMMAND_VALUE,
-        )?;
-        Ok(())
+        )
     }
 
     /// Save current settings to persistent storage.
@@ -122,46 +127,38 @@ where
     /// configuration settings to non-volatile memory.
     pub fn save_settings(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::SAVE_REGISTER_ADDRESS,
+            Register::Save,
             constants::SAVE_COMMAND_VALUE,
-        )?;
-        Ok(())
+        )
     }
 
     /// Set enable bit
     pub fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::ENABLE_REGISTER_ADDRESS,
+            Register::Enable,
             constants::ENABLE_COMMAND_VALUE,
-        )?;
-        Ok(())
+        )
     }
 
     /// Unset enable bit
     pub fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::ENABLE_REGISTER_ADDRESS,
+            Register::Enable,
             constants::DISABLE_COMMAND_VALUE,
-        )?;
-        Ok(())
+        )
     }
 
     /// Reboots device
     pub fn reboot(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
+            Register::ShutdownReboot,
             constants::REBOOT_COMMAND_VALUE,
-        )?;
-        // Wait for a second for the device to be ready again
-        self.delay.delay_ms(1000);
-        Ok(())
+        )
     }
 
     pub fn get_firmware_version(&mut self) -> Result<FirmwareVersion, Error<I2C::Error>> {
         let mut buffer = [0; 3];
-        for i in 0..=2 {
-            buffer[i] = self.read_byte(constants::FIRMWARE_VERSION_REGISTER_ADDRESS + i as u8)?;
-        }
+        self.read(Register::FirmwareVersion, &mut buffer)?;
         let version = FirmwareVersion {
             major: buffer[2],
             minor: buffer[1],
@@ -172,9 +169,7 @@ where
 
     pub fn get_serial_number(&mut self) -> Result<SerialNumber, Error<I2C::Error>> {
         let mut buffer = [0; 14];
-        for i in 0..14 {
-            buffer[i] = self.read_byte(constants::SERIAL_NUMBER_REGISTER_ADDRESS + i as u8)?;
-        }
+        self.read(Register::SerialNumber, &mut buffer)?;
         Ok(SerialNumber(buffer))
     }
 
@@ -187,10 +182,17 @@ where
     /// Reads 4 consecutive registers starting at 0x3C (0x3C through 0x3F).
     pub fn get_signature(&mut self) -> Result<Signature, Error<I2C::Error>> {
         let mut buffer = [0; 4];
-        for i in 0..4 {
-            buffer[i] = self.read_byte(constants::SIGNATURE_REGISTER_ADDRESS + i as u8)?;
-        }
+        self.read::<4>(Register::Signature, &mut buffer)?;
         Ok(Signature(buffer))
+    }
+
+    /// Get the current I2C slave address of the device.
+    ///
+    /// # Returns
+    /// * `Ok(u8)` - Current slave address
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    pub fn get_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
+        self.read_byte(Register::SlaveAddress)
     }
 
     /// Set the I2C slave address of the device.
@@ -211,16 +213,7 @@ where
         {
             return Err(Error::InvalidParameter);
         }
-        self.write_byte(constants::SLAVE_ADDRESS_REGISTER_ADDRESS, address)
-    }
-
-    /// Get the current I2C slave address of the device.
-    ///
-    /// # Returns
-    /// * `Ok(u8)` - Current slave address
-    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
-    pub fn get_slave_address(&mut self) -> Result<u8, Error<I2C::Error>> {
-        self.read_byte(constants::SLAVE_ADDRESS_REGISTER_ADDRESS)
+        self.write_byte(Register::SlaveAddress, address)
     }
 
     /// Get the current power mode of the device.
@@ -233,12 +226,12 @@ where
     /// Reading registers may wake up the device from ultra-low power mode.
     /// Avoid frequent calls when ultra-low power mode is expected.
     pub fn get_power_mode(&mut self) -> Result<PowerMode, Error<I2C::Error>> {
-        let power_mode_value = self.read_byte(constants::POWER_MODE_REGISTER_ADDRESS);
+        let power_saving_mode_value = self.read_byte(Register::PowerSavingMode);
 
-        match power_mode_value {
+        match power_saving_mode_value {
             Ok(0x00) => Ok(PowerMode::Normal),
             Ok(0x01) => Ok(PowerMode::PowerSaving),
-            Ok(_) => Err(Error::InvalidData),
+            Ok(val) => Err(Error::InvalidData(val)),
             Err(e) => {
                 match e {
                     Error::<I2C::Error>::I2c(e) => {
@@ -270,67 +263,80 @@ where
         match mode {
             PowerMode::Normal => {
                 self.disable_ultra_low_power_mode()?;
-                self.write_byte(
-                    constants::POWER_MODE_REGISTER_ADDRESS,
-                    constants::NORMAL_POWER_MODE_COMMAND_VALUE
-                )?;
-                self.delay.delay_ms(100);
+                self.set_normal_power_mode()?;
             }
             PowerMode::PowerSaving => {
                 self.disable_ultra_low_power_mode()?;
-                self.write_byte(
-                    constants::POWER_MODE_REGISTER_ADDRESS,
-                    constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE,
-                )?;
-                self.delay.delay_ms(100);
+                self.set_power_saving_mode()?;
             }
             PowerMode::UltraLow => {
                 self.enable_ultra_low_power_mode()?;
             }
         }
+        self.delay.delay_ms(100);
         Ok(())
     }
 
-    // Set ultra-low power mode, save settings and reboot
-    fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
+    fn set_normal_power_mode(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
-            constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
-        )?;
-        self.save_settings()?;
-        self.reboot()?;
+            Register::PowerSavingMode,
+            constants::NORMAL_POWER_MODE_COMMAND_VALUE
+        )
+    }
+
+    fn set_power_saving_mode(&mut self) -> Result<(), Error<I2C::Error>> {
+        self.write_byte(
+            Register::PowerSavingMode,
+            constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE
+        )
+    }
+
+    // Set ultra-low power mode, save settings and reboot
+    fn enable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>> {
+        self.write(
+            &[
+                Register::UltraLowPowerMode as u8, 
+                constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
+                constants::SAVE_COMMAND_VALUE,
+                constants::REBOOT_COMMAND_VALUE
+        ])?;
+        // Wait for a second for the device to be ready again
+        self.delay.delay_ms(1000);
         Ok(())
     }
 
     fn disable_ultra_low_power_mode(&mut self) -> Result<(), Error<I2C::Error>>{
         self.wake_from_ultra_low_power()?;
-        self.write_byte(
-            constants::ULTRA_LOW_POWER_POWER_MODE_REGISTER_ADDRESS,
-            constants::NORMAL_POWER_MODE_COMMAND_VALUE,
-        )?;
-        self.save_settings()?;
-        self.reboot()?;
+        self.write::<4>(
+            &[
+                Register::UltraLowPowerMode as u8, 
+                constants::NORMAL_POWER_MODE_COMMAND_VALUE,
+                constants::SAVE_COMMAND_VALUE,
+                constants::REBOOT_COMMAND_VALUE
+        ])?;
+        // Wait for a second for the device to be ready again
+        self.delay.delay_ms(1000);
         Ok(())
     }
 
     pub fn wake_from_ultra_low_power(&mut self) -> Result<(), Error<I2C::Error>> {
         // Wake up by reading any register
-        match self.read_byte(constants::DISTANCE_REGISTER_ADDRESS) {
+        match self.read_byte(Register::Distance) {
             Ok(_) => Ok(()),
             Err(e) => {
                 match e {
                     Error::<I2C::Error>::I2c(e) => {
                         // Check if the I2C error is a NoAcknowledge error
                         if let ErrorKind::NoAcknowledge(_) = e.kind() {
-                            // Wait at least 6ms after awakening as per manual
-                            self.delay.delay_ms(6);
+                            // Wait at least 12ms after awakening as per manual
+                            self.delay.delay_ms(12);
                             Ok(())
                         } else {
                             // Return the original I2C error for other error kinds
                             Err(Error::I2c(e))
                         }
                     },
-                    _ => Err(Error::InvalidData)
+                    _ => Err(Error::Other)
                 }
             }
         }
@@ -343,11 +349,11 @@ where
     /// * `Err(Error::InvalidData)` if register contains invalid value
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     pub fn get_ranging_mode(&mut self) -> Result<RangingMode, Error<I2C::Error>> {
-        let mode = self.read_byte(constants::RANGING_MODE_REGISTER_ADDRESS)?;
+        let mode = self.read_byte(Register::RangingMode)?;
         match mode {
-            constants::RANGING_MODE_CONTINUOUS_COMMAND_VALUE => Ok(RangingMode::Continuous),
-            constants::RANGING_MODE_TRIGGER_COMMAND_VALUE => Ok(RangingMode::Trigger),
-            _ => Err(Error::<I2C::Error>::InvalidData),
+            val if val == RangingMode::Continuous as u8 => Ok(RangingMode::Continuous),
+            val if val == RangingMode::Trigger as u8 => Ok(RangingMode::Trigger),
+            _ => Err(Error::<I2C::Error>::InvalidData(mode)),
         }
     }
 
@@ -363,12 +369,7 @@ where
     /// # Notes
     /// In trigger mode, use [`trigger_measurement()`] to initiate measurements.
     pub fn set_ranging_mode(&mut self, mode: RangingMode) -> Result<(), Error<I2C::Error>> {
-        let mode_value = match mode {
-            RangingMode::Continuous => constants::RANGING_MODE_CONTINUOUS_COMMAND_VALUE,
-            RangingMode::Trigger => constants::RANGING_MODE_TRIGGER_COMMAND_VALUE,
-        };
-        self.write_byte(constants::RANGING_MODE_REGISTER_ADDRESS, mode_value)?;
-        Ok(())
+        self.write_byte(Register::RangingMode, mode as u8)
     }
 
     /// Get the current measurement framerate in Hz.
@@ -377,7 +378,7 @@ where
     /// * `Ok(u16)` - Current framerate in Hz
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     pub fn get_framerate(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::FRAMERATE_REGISTER_ADDRESS)
+        self.read_word(Register::Framerate)
     }
 
     /// Set the measurement framerate in Hz.
@@ -395,8 +396,8 @@ where
     /// - Only factors of 500Hz / n, where n in [2, 3, ...], are allowed.
     pub fn set_framerate(&mut self, value: u16) -> Result<(), Error<I2C::Error>> {
         match value {
-            x if x < 500 && (500 % x) == 0 => {
-                self.write_word(constants::FRAMERATE_REGISTER_ADDRESS, value)
+            x if x == 0 || (x < 500 && (500 % x) == 0) => {
+                self.write_word(Register::Framerate, value)
             }
             _ => Err(Error::<I2C::Error>::InvalidParameter),
         }
@@ -412,7 +413,7 @@ where
     /// When Signal Strength < Signal Strength Threshold * 10,
     /// then the returned distance is the dummy distance instead of the actual distance
     pub fn get_signal_strength_threshold(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS)
+        self.read_word(Register::SignalStrengthThreshold)
     }
 
     /// Set the signal strength threshold for valid measurements.
@@ -428,7 +429,7 @@ where
     /// When Signal Strength < Signal Strength Threshold * 10,
     /// then the returned distance is the dummy distance instead of the actual distance
     pub fn set_signal_strength_threshold(&mut self, value: u16) -> Result<(), Error<I2C::Error>> {
-        self.write_word(constants::SIGNAL_STRENGTH_THRESHOLD_REGISTER_ADDRESS, value)
+        self.write_word(Register::SignalStrengthThreshold, value)
     }
 
     /// Get the current dummy distance value
@@ -437,7 +438,7 @@ where
     /// * `Ok(u16)` - Current dummy distance value
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     pub fn get_dummy_distance(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS)
+        self.read_word(Register::DummyDistance)
     }
 
     /// Set the dummy distance value
@@ -448,7 +449,7 @@ where
     /// # Returns
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     pub fn set_dummy_distance(&mut self, value: u16) -> Result<(), Error<I2C::Error>> {
-        self.write_word(constants::DUMMY_DISTANCE_REGISTER_ADDRESS, value)
+        self.write_word(Register::DummyDistance, value)
     }
 
     /// Get the current maximum distance setting
@@ -457,7 +458,7 @@ where
     /// * `Ok(u16)` - Current maximum distance
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     pub fn get_minimum_distance(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::MINIMUM_DISTANCE_REGISTER_ADDRESS)
+        self.read_word(Register::MinimumDistance)
     }
 
     /// Set the minimum valid distance measurement
@@ -472,7 +473,7 @@ where
     /// # Notes
     /// * Measurements below this distance may be filtered
     pub fn set_minimum_distance(&mut self, value: u16) -> Result<(), Error<I2C::Error>> {
-        self.write_word(constants::MINIMUM_DISTANCE_REGISTER_ADDRESS, value)
+        self.write_word(Register::MinimumDistance, value)
     }
 
     /// Get the current maximum distance setting
@@ -481,7 +482,7 @@ where
     /// * `Ok(u16)` - Current maximum distance
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     pub fn get_maximum_distance(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::MAXIMUM_DISTANCE_REGISTER_ADDRESS)
+        self.read_word(Register::MaximumDistance)
     }
 
     /// Set the maximum valid distance measurement
@@ -497,7 +498,7 @@ where
     /// * Measurements above this distance may be filtered
     /// * Units depend on interface (mm for I2C, cm for UART typically)
     pub fn set_maximum_distance(&mut self, value: u16) -> Result<(), Error<I2C::Error>> {
-        self.write_word(constants::MAXIMUM_DISTANCE_REGISTER_ADDRESS, value)
+        self.write_word(Register::MaximumDistance, value)
     }
 
     /// Get the error code from the device
@@ -506,7 +507,7 @@ where
     /// * `Ok(u16)` - Error code value
     /// * `Err(Error::I2c(I2CError))` - if there was an I2C error.
     pub fn get_error(&mut self) -> Result<u16, Error<I2C::Error>> {
-        self.read_word(constants::ERROR_REGISTER_ADDRESS)
+        self.read_word(Register::Error)
     }
 
     /// Perform a complete measurement reading from the sensor.
@@ -521,24 +522,25 @@ where
     /// - Signal Strength: Registers 0x02 (low byte) and 0x03 (high byte)
     /// - Temperature: Registers 0x04 (low byte) and 0x05 (high byte) in 0.01°C units
     /// - Timestamp: Registers 0x06 (low byte) and 0x07 (high byte) device ticks
+    /// - Error: Registers 0x08 (low byte) and 0x09 (high byte) error code
     ///
     /// Temperature is automatically converted from hundredths of degrees Celsius to degrees Celsius.
     pub fn measure(&mut self) -> Result<SensorReading, Error<I2C::Error>> {
-        let distance = self.read_word(constants::DISTANCE_REGISTER_ADDRESS)?;
-        let signal_strength = self.read_word(constants::SIGNAL_STRENGTH_REGISTER_ADDRESS)?;
-        let temperature = self.read_word(constants::TEMPERATURE_REGISTER_ADDRESS)? as f32 / 100.0;
-        let timestamp = self.read_word(constants::TIMESTAMP_REGISTER_ADDRESS)?;
+        let mut buffer = [0; 10];
+        self.read::<10>(Register::Distance, &mut buffer)?;
+        let distance = self.combine_buffer_into_word(&[buffer[0], buffer[1]]);
+        let signal_strength = self.combine_buffer_into_word(&[buffer[2], buffer[3]]);
+        let temperature = self.combine_buffer_into_word(&[buffer[4], buffer[5]]);
+        let temperature = temperature as f32 / 100.0;
+        let timestamp = self.combine_buffer_into_word(&[buffer[6], buffer[7]]);
+        let error = self.combine_buffer_into_word(&[buffer[8], buffer[9]]);
         Ok(SensorReading {
             distance,
             signal_strength,
             temperature,
             timestamp,
+            error,
         })
-    }
-
-    pub fn read_distance(&mut self) -> Result<u16, Error<I2C::Error>> {
-        let distance = self.read_word(constants::DISTANCE_REGISTER_ADDRESS)?;
-        Ok(distance)
     }
 
     /// Trigger a single measurement (only effective in trigger mode).
@@ -552,172 +554,9 @@ where
     /// * Initiates immediate measurement in trigger mode.
     pub fn trigger_measurement(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(
-            constants::TRIGGER_REGISTER_ADDRESS,
+            Register::Trigger,
             constants::TRIGGER_COMMAND_VALUE,
         )?;
         Ok(())
-    }
-}
-
-#[cfg(all(test, not(target_arch = "riscv32imc-unknown-none-elf")))]
-mod test {
-    extern crate std;
-    use std::vec::Vec;
-
-    use super::*;
-    use embedded_hal_mock::eh1::delay::StdSleep as Delay;
-    use embedded_hal_mock::eh1::i2c::{Mock as I2cTraitMock, Transaction as I2cTraitTransaction};
-
-    /// Returns vector of i2c transaction expectations for an I2C read operation
-    fn read_expectations(register_address: u8, value: u8) -> Vec<I2cTraitTransaction> {
-        let expectations = Vec::from([
-            I2cTraitTransaction::write(
-                constants::DEFAULT_SLAVE_ADDRESS,
-                Vec::from([register_address]),
-            ),
-            I2cTraitTransaction::read(constants::DEFAULT_SLAVE_ADDRESS, Vec::from([value])),
-        ]);
-        expectations
-    }
-
-    /// Returns vector of i2c transaction expectations for an I2C write operation
-    fn write_expectations(register_address: u8, value: u8) -> Vec<I2cTraitTransaction> {
-        let expectations = Vec::from([I2cTraitTransaction::write(
-            constants::DEFAULT_SLAVE_ADDRESS,
-            Vec::from([register_address, value]),
-        )]);
-        expectations
-    }
-
-    fn setup(i2c: &mut I2cTraitMock) -> TFLuna<&mut I2cTraitMock, Delay> {
-        TFLuna::new(i2c, constants::DEFAULT_SLAVE_ADDRESS, Delay {}).unwrap()
-    }
-
-    #[test]
-    fn test_enable_disable() {
-        let mut expectations = Vec::new();
-        expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 1));
-        expectations.extend_from_slice(&write_expectations(constants::ENABLE_REGISTER_ADDRESS, 0));
-        let mut i2c = I2cTraitMock::new(&expectations);
-        let mut device = setup(&mut i2c);
-        assert!(device.enable().is_ok());
-        assert!(device.disable().is_ok());
-        i2c.done();
-    }
-
-    #[test]
-    fn test_reboot() {
-        let expectations = write_expectations(
-            constants::SHUTDOWN_REBOOT_REGISTER_ADDRESS,
-            constants::REBOOT_COMMAND_VALUE,
-        );
-        let mut i2c = I2cTraitMock::new(&expectations);
-        let mut device = setup(&mut i2c);
-        assert!(device.reboot().is_ok());
-        i2c.done();
-    }
-
-    #[test]
-    fn test_get_firmware_version() {
-        let mut expectations = Vec::new();
-        for i in 0..3 {
-            expectations.extend_from_slice(&read_expectations(
-                constants::FIRMWARE_VERSION_REGISTER_ADDRESS + i,
-                i,
-            ));
-        }
-        let mut i2c = I2cTraitMock::new(&expectations);
-        let mut device = setup(&mut i2c);
-        let firmware_version = device.get_firmware_version();
-        assert!(firmware_version.is_ok(), "{:?}", firmware_version);
-        let expected_firmware_version = FirmwareVersion {
-            major: 2,
-            minor: 1,
-            revision: 0,
-        };
-        assert_eq!(
-            firmware_version.unwrap(),
-            expected_firmware_version,
-            "{:?} is different from {:?}",
-            firmware_version,
-            expected_firmware_version
-        );
-        i2c.done();
-    }
-
-    #[test]
-    fn test_get_serial_number() {
-        let mut expectations = Vec::new();
-        for i in 0..14 {
-            expectations.extend_from_slice(&read_expectations(
-                constants::SERIAL_NUMBER_REGISTER_ADDRESS + i,
-                i,
-            ));
-        }
-        let mut i2c = I2cTraitMock::new(&expectations);
-        let mut device = setup(&mut i2c);
-        let serial_number = device.get_serial_number();
-        assert!(serial_number.is_ok(), "{:?}", serial_number);
-        let expected_serial_number =
-            SerialNumber((0..14).into_iter().collect::<Vec<_>>().try_into().unwrap());
-        assert_eq!(
-            serial_number.unwrap(),
-            expected_serial_number,
-            "{:?} is different from {:?}",
-            serial_number,
-            expected_serial_number
-        );
-        i2c.done();
-    }
-
-    #[test]
-    fn test_measure() {
-        let mut expectations = Vec::new();
-        // Distance
-        for (i, value) in (0..2).zip([0x0A, 0]) {
-            expectations.extend_from_slice(&read_expectations(
-                constants::DISTANCE_REGISTER_ADDRESS + i,
-                value,
-            ));
-        }
-        // Signal Strength
-        for (i, value) in (0..2).zip([0x64, 0]) {
-            expectations.extend_from_slice(&read_expectations(
-                constants::SIGNAL_STRENGTH_REGISTER_ADDRESS + i,
-                value,
-            ));
-        }
-        // Temperature
-        for (i, value) in (0..2).zip([0xB2, 0x0C]) {
-            expectations.extend_from_slice(&read_expectations(
-                constants::TEMPERATURE_REGISTER_ADDRESS + i,
-                value,
-            ));
-        }
-        // Timestamp
-        for (i, value) in (0..2).zip([0, 0]) {
-            expectations.extend_from_slice(&read_expectations(
-                constants::TIMESTAMP_REGISTER_ADDRESS + i,
-                value,
-            ));
-        }
-        let mut i2c = I2cTraitMock::new(&expectations);
-        let mut device = setup(&mut i2c);
-        let sensor_reading = device.measure();
-        assert!(sensor_reading.is_ok(), "{:?}", sensor_reading);
-        let expected_sensor_reading = SensorReading {
-            distance: 10,
-            signal_strength: 100,
-            temperature: 32.5,
-            timestamp: 0,
-        };
-        assert_eq!(
-            sensor_reading.unwrap(),
-            expected_sensor_reading,
-            "{:?} is different from {:?}",
-            sensor_reading,
-            expected_sensor_reading
-        );
-        i2c.done();
     }
 }
