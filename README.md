@@ -48,8 +48,6 @@ esp_bootloader_esp_idf::esp_app_desc!();
 
 #[main]
 fn main() -> ! {
-    // generator version: 0.5.0
-
     rtt_target::rtt_init_defmt!();
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
@@ -66,11 +64,6 @@ fn main() -> ! {
         .with_scl(scl_pin);
     let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, Address::default(), Delay::new()).unwrap();
 
-    // Restore factory defaults and then reboot device
-    tfluna.restore_factory_defaults().unwrap();
-    tfluna.reboot().unwrap();
-    Delay::new().delay_millis(500);
-
     // Enable measurements
     tfluna.enable().unwrap();
 
@@ -78,7 +71,7 @@ fn main() -> ! {
         let measurement = tfluna.measure().unwrap();
         info!("Distance = {:?}", measurement.distance);
         let delay_start = Instant::now();
-        while delay_start.elapsed() < Duration::from_millis(500) {}
+        while delay_start.elapsed() < Duration::from_millis(100) {}
     }
 }
 ```
