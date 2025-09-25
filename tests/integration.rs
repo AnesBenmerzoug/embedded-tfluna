@@ -9,16 +9,16 @@ use esp_hal as _;
 mod tests {
     use esp_hal::clock::CpuClock;
     use esp_hal::delay::Delay;
+    use esp_hal::gpio::{Input, InputConfig, Pull};
     use esp_hal::{
         i2c::master::{Config, I2c},
         time::Rate,
     };
-    use esp_hal::gpio::{Input, InputConfig, Pull};
     use log::debug;
 
     use embedded_tfluna::{
         i2c::{Address, TFLuna, DEFAULT_SLAVE_ADDRESS},
-        types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature},
+        types::{FirmwareVersion, RangingMode, PowerMode, Signature, SerialNumber},
     };
 
     struct Context {
@@ -44,18 +44,33 @@ mod tests {
             .with_scl(scl_pin);
         let mut tfluna: TFLuna<_, _> = TFLuna::new(i2c, Address::default(), Delay::new()).unwrap();
         let delay = Delay::new();
-        let data_ready_pin = Input::new(peripherals.GPIO10, InputConfig::default().with_pull(Pull::None));
+        let data_ready_pin = Input::new(
+            peripherals.GPIO10,
+            InputConfig::default().with_pull(Pull::None),
+        );
 
         // Set power mode to Normal, mostly in case we are in ultra-low power mode
+        // We try multiple times in case waking up from ultra-low power mode fails
+        let _ = tfluna.set_power_mode(PowerMode::Normal);
+        let _ = tfluna.set_power_mode(PowerMode::Normal);
         tfluna.set_power_mode(PowerMode::Normal).unwrap();
+        delay.delay_millis(100);
 
         // Make sure we are in normal power mode
         assert_eq!(tfluna.get_power_mode().unwrap(), PowerMode::Normal);
 
         // Restore factory defaults and then reboot device
+        // After sending the reboot command we wait for a bit
+        // until the device stabilizes
         tfluna.restore_factory_defaults().unwrap();
         tfluna.reboot().unwrap();
-        Context { tfluna, delay, data_ready_pin }
+        delay.delay_millis(1000);
+        
+        Context {
+            tfluna,
+            delay,
+            data_ready_pin,
+        }
     }
 
     #[test]
@@ -178,12 +193,16 @@ mod tests {
         let mut tfluna = context.tfluna;
         // Get framerate and expect it to be set to default value
         let framerate = tfluna.get_framerate().unwrap();
+        debug!("Framerate before change = {}", framerate);
         assert_eq!(framerate, 100);
         // Set framerate to anohter value and expect it to be set
         let new_framerate = 250;
         tfluna.set_framerate(new_framerate).unwrap();
+        context.delay.delay_millis(100);
         let framerate = tfluna.get_framerate().unwrap();
-        assert_eq!(framerate, new_framerate)
+        debug!("Framerate after change = {}", framerate);
+        assert_eq!(framerate, new_framerate);
+        context.delay.delay_millis(10);
     }
 
     #[test]
@@ -253,10 +272,14 @@ mod tests {
         let mut tfluna = context.tfluna;
         // We take an initial measurement and make sure all values have appropriate values
         let measurement = tfluna.measure().unwrap();
+        debug!("measurement = {:?}", measurement);
+        context.delay.delay_millis(1);
+
         assert!(measurement.distance > 0);
         assert!(measurement.signal_strength > 0);
         assert!(measurement.temperature > 0.0);
         assert!(measurement.timestamp > 0);
+        assert_eq!(measurement.error, 0);
         // We wait for a bit and take a second measurement and expect both to be different
         context.delay.delay_millis(100);
         let second_measurement = tfluna.measure().unwrap();
@@ -266,8 +289,13 @@ mod tests {
     #[test]
     fn test_continuous_ranging_mode(context: Context) {
         let mut tfluna = context.tfluna;
-        // Set ranging mode to continuous
+        
+        debug!("Set ranging mode to continuous");
         tfluna.set_ranging_mode(RangingMode::Continuous).unwrap();
+        context.delay.delay_millis(500);
+        assert_eq!(tfluna.get_ranging_mode().unwrap(), RangingMode::Continuous);
+
+        debug!("Waiting for data ready pin to go high");
         for i in 0..10 {
             if context.data_ready_pin.is_high() {
                 debug!("data ready pin is high after {}ms", i);
@@ -276,7 +304,11 @@ mod tests {
             context.delay.delay_millis(1);
         }
         assert!(context.data_ready_pin.is_high());
+
+        debug!("Reading measurement");
         tfluna.measure().unwrap();
+
+        debug!("Waiting for data ready pin to go low");
         for i in 0..10 {
             if context.data_ready_pin.is_low() {
                 debug!("data ready pin is low after {}ms", i);
@@ -285,20 +317,27 @@ mod tests {
             context.delay.delay_millis(1);
         }
         assert!(context.data_ready_pin.is_low());
-        context.delay.delay_millis(10);
     }
 
     #[test]
     fn test_trigger_ranging_mode(context: Context) {
         let mut tfluna = context.tfluna;
-        // We take an initial measurement
+
+        debug!("Taking initial measurement");
         let initial_measurement = tfluna.measure().unwrap();
-        // Set ranging mode to trigger
+        context.delay.delay_millis(100);
+
+        debug!("Setting ranging mode to trigger");
         tfluna.set_ranging_mode(RangingMode::Trigger).unwrap();
         context.delay.delay_millis(100);
+        assert_eq!(tfluna.get_ranging_mode().unwrap(), RangingMode::Trigger);
+
         // We trigger the measurement, wait a bit and then read the measured values
+        debug!("Triggering measurement");
         tfluna.trigger_measurement().unwrap();
         context.delay.delay_millis(100);
+
+        debug!("Reading measurement");
         let first_measurement_after_trigger = tfluna.measure().unwrap();
         assert_ne!(initial_measurement, first_measurement_after_trigger);
         // We wait some time again and read without triggering the measurement
@@ -334,7 +373,7 @@ mod tests {
         assert!(context.data_ready_pin.is_high());
 
         debug!("Reading distance");
-        tfluna.read_distance().unwrap();
+        tfluna.measure().unwrap();
         context.delay.delay_millis(10);
 
         debug!("Waiting for data ready signal to go low");
