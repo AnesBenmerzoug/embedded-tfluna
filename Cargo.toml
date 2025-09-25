@@ -6,9 +6,10 @@ edition = "2024"
 [dependencies]
 embedded-hal = "1.0.0"
 
+[target.'cfg(not(target_arch = "riscv32imc-unknown-none-elf"))'.dev-dependencies]
+embedded-hal-mock = "0.11.1"
 
-# [target.'cfg(target_arch = "riscv32imc-unknown-none-elf")'.dev-dependencies]
-[dev-dependencies]
+[target.riscv32imc-unknown-none-elf.dev-dependencies]
 log = "0.4.28"
 rtt-target = { version = "0.6.1", features = ["log"] }
 embedded-test = { version = "0.6.2", features = ["log"] }
@@ -26,6 +27,7 @@ test = false
 [[test]]
 name = "integration"
 harness = false
+
 
 # cargo build/run
 [profile.dev]
