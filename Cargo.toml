@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 embedded-hal = "1.0.0"
 
-[target.'cfg(not(target_arch = "riscv32imc-unknown-none-elf"))'.dev-dependencies]
+[target.'cfg(not(target_arch = "riscv32"))'.dev-dependencies]
 embedded-hal-mock = "0.11.1"
 
 [target.riscv32imc-unknown-none-elf.dev-dependencies]

@@ -1,14 +1,12 @@
 fn main() {
-    match std::env::var("CARGO_CFG_TARGET_ARCH") {
-        Ok(target_arch) if target_arch == "riscv32imc-unknown-none-elf" => {
-            linker_be_nice();
-            // esp-hal specific
-            println!("cargo:rustc-link-arg=-Tlinkall.x");
-            // add linker script for embedded-test!!
-            println!("cargo::rustc-link-arg-tests=-Tembedded-test.x");
-        }
-        Ok(_) => (),
-        Err(_) => panic!(),
+    let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    eprintln!("target_arch = {}", target_arch);
+    if target_arch == "riscv32" {
+        linker_be_nice();
+        // esp-hal specific
+        println!("cargo:rustc-link-arg=-Tlinkall.x");
+        // add linker script for embedded-test!!
+        println!("cargo::rustc-link-arg-tests=-Tembedded-test.x");
     }
 }
 
