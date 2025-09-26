@@ -1,5 +1,19 @@
 [package]
 name = "embedded-tfluna"
+description = "Platform-agnostic Rust driver for the TF-Luna LiDAR distance sensor."
+authors = ["Anes Benmerzoug <anes.benmerzoug@gmail.com>"]
+repository = "https://github.com/AnesBenmerzoug/embedded-tfluna"
+homepage = "https://github.com/eldruin/pwm-pca9685-rs"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = [
+    "tf-luna",
+    "lidar",
+    "distance-sensor",
+    "embedded-hal",
+    "embedded-hal-driver",
+]
+categories = ["embedded", "hardware-support", "no-std"]
 version = "0.1.0"
 edition = "2024"
 
@@ -23,11 +37,10 @@ esp-println = { version = "0.15.0", features = ["esp32c3", "log-04"] }
 [lib]
 test = false
 
-# needed for each integration test
+# needed for each integration test that uses embedded-test
 [[test]]
 name = "integration"
 harness = false
-
 
 # cargo build/run
 [profile.dev]
