@@ -1,5 +1,15 @@
 # Embedded TF-Luna
 
+[crates-badge]: https://img.shields.io/crates/v/embedded-tfluna.svg
+[crates-url]: https://crates.io/crates/embedded-tfluna
+[license-badge]: https://img.shields.io/badge/license-MIT%2FApache--2.0-blue?labelColor=1C2C2E&style=flat-square
+[ci-badge]: https://github.com/AnesBenmerzoug/embedded-tfluna/actions/workflows/main.yml/badge.svg
+[ci-url]: https://github.com/AnesBenmerzoug/embedded-tfluna/actions?query=workflow%3ACI+branch%3Amain
+
+[![Crates.io][crates-badge]][crates-url]
+![MIT/Apache-2.0 licensed][license-badge]
+[![Build Status][ci-badge]][ci-url]
+
 This Rust library provides a `no_std` interface for interacting with the
 [TF-Luna](https://en.benewake.com/TFLuna/index.html)
 LiDAR distance sensor.
