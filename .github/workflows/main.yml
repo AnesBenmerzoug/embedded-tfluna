@@ -26,6 +26,8 @@ jobs:
             args: --all -- --check
           - command: clippy
             args: --all-features --workspace -- -D warnings
+          - command: publish
+            args: --dry-run
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -37,7 +39,7 @@ jobs:
           components: rust-src, rustfmt, clippy
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
-      - name: Run command
+      - name: Run command 'cargo ${{ matrix.action.command }}''
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
   tests:
     name: Tests
