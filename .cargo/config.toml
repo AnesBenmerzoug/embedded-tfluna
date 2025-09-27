@@ -14,3 +14,5 @@ DEFMT_LOG = "debug"
 
 [alias]
 integration-tests = "test --test integration --target riscv32imc-unknown-none-elf"
+integration-mock-tests = "llvm-cov test --test integration_mock"
+integration-mock-tests-ci = "llvm-cov test --test integration_mock --all-features --lcov --output-path lcov.info"

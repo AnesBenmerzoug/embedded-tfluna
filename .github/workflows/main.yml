@@ -12,9 +12,12 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+defaults:
+
+
 jobs:
-  rust-checks:
-    name: Rust Checks
+  code-checks:
+    name: Code Checks
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -28,7 +31,7 @@ jobs:
             args: --all-features --workspace -- -D warnings
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@v1
         with:
@@ -39,3 +42,21 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: Run command
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          target: riscv32imc-unknown-none-elf
+          toolchain: stable
+          components: rust-src, rustfmt, clippy
+      - name: Enable caching
+        uses: Swatinem/rust-cache@v2
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+      - name: Run tests and generate code coverage
+        run: cargo integration-mock-tests-ci
