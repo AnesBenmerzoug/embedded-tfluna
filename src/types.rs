@@ -1,22 +1,36 @@
- /// Structure containing major, minor, and revision numbers.
+//! Types of returned data from TF-Luna.
+
+/// Structure containing major, minor, and revision numbers.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FirmwareVersion {
+    /// Major version number
     pub major: u8,
+    /// Minor version number
     pub minor: u8,
+    /// Revision version number
     pub revision: u8,
 }
 
+/// Structure containing the serial number of the device.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SerialNumber(pub [u8; 14]);
 
 /// ASCII signature of the device. 
+/// 
 /// The TF-Luna's signature is: 'L', 'U', 'N', 'A'
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Signature(pub [u8; 4]);
 
+/// Ranging modes of the device.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RangingMode {
+    /// In Continuous ranging mode, the TF-Luna will keep tracking
+    /// the distance at a 500hz frequency, but as the configured
+    /// output framerate (frequency) is lower (defaults to 100Hz),
+    /// the output will be the average.
     Continuous = 0,
+    /// In trigger ranging mode, the TF-Luna stops measuring on its own
+    /// and will only measure distance when explicitly triggered.
     Trigger = 1,
 }
 
@@ -34,16 +48,16 @@ pub enum PowerMode {
 }
 
 /// Structure containing distance, signal strength, temperature, and timestamp.
-///
-/// - Distance: In centimeters.
-/// - Signal Strength: Signal strength value between 0 and 1000.
-/// - Temperature: In °C with 0.01 precision.
-/// - Timestamp: Device ticks.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SensorReading {
+    /// Distance in centimeters
     pub distance: u16,
+    /// Signal strength (amplitude in manual) value between 0 and 1000.
     pub signal_strength: u16,
+    /// Internal device temperature in °C with 0.01 precision.
     pub temperature: f32,
+    /// Clock ticks since device was powered on.
     pub timestamp: u16,
+    /// Error code
     pub error: u16,
 }

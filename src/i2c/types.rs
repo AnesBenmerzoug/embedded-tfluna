@@ -27,11 +27,16 @@ impl From<Address> for u8 {
     }
 }
 
+/// I2C Error enum
 #[derive(Clone, Copy, Debug)]
 pub enum Error<I2CError: I2CErrorTrait> {
+    /// Wrapped I2C Error
     I2c(I2CError),
+    /// Invalid data returned by device
     InvalidData(u8),
+    /// Invalid parameter passed to method
     InvalidParameter,
+    /// Other error
     Other,
 }
 

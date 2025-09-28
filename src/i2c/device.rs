@@ -11,7 +11,7 @@ use embedded_hal::{
     i2c::{I2c as I2cTrait, SevenBitAddress},
 };
 
-// TF-Luna controller
+/// TF-Luna controller
 #[derive(Debug)]
 pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
     /// Concrete I2C device implementation.
@@ -26,6 +26,7 @@ where
     I2C: I2cTrait<SevenBitAddress>,
     D: DelayNs,
 {
+    /// Associated method to create a new instance of the controller
     pub fn new(i2c: I2C, address: Address, delay: D) -> Result<Self, Error<I2C::Error>> {
         let sensor = Self {
             i2c,
@@ -142,6 +143,14 @@ where
         self.write_byte(Register::ShutdownReboot, constants::REBOOT_COMMAND_VALUE)
     }
 
+    /// Get the device firmware.
+    ///
+    /// # Returns
+    /// * `Ok(FirmwareVersion)` - current firmware version
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    ///
+    /// # Notes
+    /// Reads 3 consecutive registers starting at 0x0A (0x0A through 0x0C).
     pub fn get_firmware_version(&mut self) -> Result<FirmwareVersion, Error<I2C::Error>> {
         let mut buffer = [0; 3];
         self.read(Register::FirmwareVersion, &mut buffer)?;
@@ -153,6 +162,14 @@ where
         Ok(version)
     }
 
+    /// Get the device serial number.
+    ///
+    /// # Returns
+    /// * `Ok(SerialNumber)` - device serial number
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
+    ///
+    /// # Notes
+    /// Reads 14 consecutive registers starting at 0x10 (0x10 through 0x1D).
     pub fn get_serial_number(&mut self) -> Result<SerialNumber, Error<I2C::Error>> {
         let mut buffer = [0; 14];
         self.read(Register::SerialNumber, &mut buffer)?;
@@ -163,6 +180,7 @@ where
     ///
     /// # Returns
     /// * `Ok([u8; 4])` - 4-byte ASCII signature
+    /// * `Err(Error::I2c(I2CError))` - if there was an I2C error
     ///
     /// # Notes
     /// Reads 4 consecutive registers starting at 0x3C (0x3C through 0x3F).
@@ -303,6 +321,7 @@ where
         Ok(())
     }
 
+    /// Wakes up devie from ultra-low power mode.
     pub fn wake_from_ultra_low_power(&mut self) -> Result<(), Error<I2C::Error>> {
         // Wake up by reading any register
         match self.read_byte(Register::Distance) {
