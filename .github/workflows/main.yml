@@ -26,6 +26,8 @@ jobs:
             args: --all -- --check
           - command: clippy
             args: --all-features --workspace -- -D warnings
+          - command: doc
+            args: --all-features
           - command: publish
             args: --dry-run
     steps:
