@@ -17,8 +17,8 @@ pub struct FirmwareVersion {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SerialNumber(pub [u8; 14]);
 
-/// ASCII signature of the device. 
-/// 
+/// ASCII signature of the device.
+///
 /// The TF-Luna's signature is: 'L', 'U', 'N', 'A'
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Signature(pub [u8; 4]);
