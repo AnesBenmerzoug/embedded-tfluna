@@ -1,4 +1,4 @@
-/// Structure containing major, minor, and revision numbers.
+ /// Structure containing major, minor, and revision numbers.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct FirmwareVersion {
     pub major: u8,
@@ -9,6 +9,8 @@ pub struct FirmwareVersion {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SerialNumber(pub [u8; 14]);
 
+/// ASCII signature of the device. 
+/// The TF-Luna's signature is: 'L', 'U', 'N', 'A'
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Signature(pub [u8; 4]);
 
