@@ -2,6 +2,7 @@
 
 /// Structure containing major, minor, and revision numbers.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FirmwareVersion {
     /// Major version number
     pub major: u8,
@@ -13,6 +14,7 @@ pub struct FirmwareVersion {
 
 /// Structure containing the serial number of the device.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SerialNumber(pub [u8; 14]);
 
 /// ASCII signature of the device. 
@@ -23,6 +25,7 @@ pub struct Signature(pub [u8; 4]);
 
 /// Ranging modes of the device.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RangingMode {
     /// In Continuous ranging mode, the TF-Luna will keep tracking
     /// the distance at a 500hz frequency, but as the configured
@@ -36,6 +39,7 @@ pub enum RangingMode {
 
 /// Enum containing the different power modes of the TF-Luna
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum PowerMode {
     /// Normal power mode with largest power consumption
     ///
@@ -49,6 +53,7 @@ pub enum PowerMode {
 
 /// Structure containing distance, signal strength, temperature, and timestamp.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SensorReading {
     /// Distance in centimeters
     pub distance: u16,

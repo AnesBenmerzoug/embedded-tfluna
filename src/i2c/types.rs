@@ -4,6 +4,7 @@ use crate::i2c::constants::DEFAULT_SLAVE_ADDRESS;
 
 /// I2C device address
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Address(pub(crate) u8);
 
 /// Default device address
@@ -29,6 +30,7 @@ impl From<Address> for u8 {
 
 /// I2C Error enum
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error<I2CError: I2CErrorTrait> {
     /// Wrapped I2C Error
     I2c(I2CError),
@@ -50,6 +52,7 @@ where
 }
 
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Register {
     /// Distance measurement low byte register - centimeters - Read-only
     Distance = 0x00,

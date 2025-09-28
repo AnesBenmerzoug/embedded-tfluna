@@ -19,6 +19,10 @@ edition = "2024"
 
 [dependencies]
 embedded-hal = "1.0.0"
+defmt = { version = "1.0.1", optional = true }
+
+[features]
+defmt = ["dep:defmt"]
 
 [target.'cfg(not(target_arch = "riscv32"))'.dev-dependencies]
 embedded-hal-mock = "0.11.1"

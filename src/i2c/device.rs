@@ -13,6 +13,7 @@ use embedded_hal::{
 
 /// TF-Luna controller
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
     /// Concrete I2C device implementation.
     i2c: I2C,
