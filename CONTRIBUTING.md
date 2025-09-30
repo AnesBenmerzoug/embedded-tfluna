@@ -12,7 +12,12 @@
 - Update version number.
 - Update changelog following the [Common Changelog](https://common-changelog.org) style guide
   (as much as possible, of course).
-- Tag latest commit and push it.
+- Create tag for latest commit (v[0-9]+\.[0-9]+\.[0-9]+) and push it: 
+
+  ```shell
+  git tag -a <tag> -m "<tag message e.g. current date>"
+  ```
+
 - Let CI handle the rest.
 
 ## Contribution
