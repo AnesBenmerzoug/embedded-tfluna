@@ -7,7 +7,7 @@ mod test {
     use embedded_hal_mock::eh1::i2c::{Mock as I2cTraitMock, Transaction as I2cTraitTransaction};
 
     use embedded_tfluna::i2c::{Address, DEFAULT_SLAVE_ADDRESS, TFLuna};
-    use embedded_tfluna::types::{FirmwareVersion, SensorReading, SerialNumber};
+    use embedded_tfluna::{FirmwareVersion, SensorReading, SerialNumber};
 
     /// Returns vector of i2c transaction expectations for an I2C read operation
     fn read_expectations(register_address: u8, value: &[u8]) -> Vec<I2cTraitTransaction> {

@@ -3,4 +3,6 @@
 #![deny(missing_docs)]
 
 pub mod i2c;
-pub mod types;
+mod types;
+
+pub use types::{FirmwareVersion, PowerMode, RangingMode, SensorReading, SerialNumber, Signature};

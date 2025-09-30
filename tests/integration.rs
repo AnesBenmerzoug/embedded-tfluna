@@ -18,7 +18,7 @@ mod tests {
 
     use embedded_tfluna::{
         i2c::{Address, DEFAULT_SLAVE_ADDRESS, TFLuna},
-        types::{FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature},
+        {FirmwareVersion, PowerMode, RangingMode, SerialNumber, Signature},
     };
 
     struct Context {
