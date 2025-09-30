@@ -6,6 +6,15 @@
 - Rust 1.86+
 - [cargo-llvm-cov](https://github.com/taiki-e/cargo-llvm-cov)
 
+## Release Process
+
+- Make sure CI passes.
+- Update version number.
+- Update changelog following the [Common Changelog](https://common-changelog.org) style guide
+  (as much as possible, of course).
+- Tag latest commit and push it.
+- Let CI handle the rest.
+
 ## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
