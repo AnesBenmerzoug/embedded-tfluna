@@ -25,7 +25,7 @@ However, this library only supports I2C for now.
 
 ## Device
 
-The TF-Luna's specifications, taken from the [user manual](https://en.benewake.com/DataDownload/index_pid_20_lcid_21.html), are summarized in the following table:
+The TF-Luna's characteristics, taken from the [user manual](https://en.benewake.com/DataDownload/index_pid_20_lcid_21.html), are summarized in the following table:
 
 
 | Description         | Parameter value             |
