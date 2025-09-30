@@ -1,11 +1,11 @@
 [package]
 edition = "2021"
-name = "esp32c3-i2c-sync"
+name = "esp32c3"
 rust-version = "1.86"
 version = "0.1.0"
 
 [[bin]]
-name = "esp32c3_i2c_sync"
+name = "esp32c3"
 path = "./src/main.rs"
 
 [dependencies]

@@ -1,4 +1,4 @@
-# ESP32 C2 TF-Luna I2C Sync Example
+# ESP32 C2 TF-Luna Example
 
 The structure of this example was generated using esp-generate version 0.5.0
 
