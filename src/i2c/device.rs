@@ -126,14 +126,14 @@ where
     }
 
     /// Set enable bit.
-    /// 
+    ///
     /// Calling this method will enable the device's measurements.
     pub fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(Register::Enable, constants::ENABLE_COMMAND_VALUE)
     }
 
     /// Unset enable bit
-    /// 
+    ///
     /// Calling this method will disable the device's measurements.
     pub fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
         self.write_byte(Register::Enable, constants::DISABLE_COMMAND_VALUE)
@@ -204,7 +204,7 @@ where
     /// # Notes
     /// * Valid addresses are in the range [0x08, 0x77]
     /// * If you change the I2C slave address you will have to recreate an instance of [`TFLuna`]
-    ///   with the new address. 
+    ///   with the new address.
     pub fn set_slave_address(&mut self, address: u8) -> Result<(), Error<I2C::Error>> {
         if !(constants::SLAVE_ADDRESS_MINIMUM_VALUE..=constants::SLAVE_ADDRESS_MAXIMUM_VALUE)
             .contains(&address)
@@ -315,7 +315,7 @@ where
     }
 
     /// Wakes up device from ultra-low power mode.
-    /// 
+    ///
     /// # Notes
     /// * This is only useful in [`PowerMode::UltraLow`] power mode.
     /// * If that is the case, the method waits for 12ms before returning.
