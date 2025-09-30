@@ -23,6 +23,34 @@ This library provides a `no_std` interface for interacting with the [TF-Luna] Li
 The TF-Luna supports both I2C and UART communication protocols.
 However, this library only supports I2C for now.
 
+## Device
+
+The TF-Luna's specifications, taken from the [user manual](https://en.benewake.com/DataDownload/index_pid_20_lcid_21.html), are summarized in the following table:
+
+
+| Description         | Parameter value             |
+|---|---|
+| Operating range     | 0.2 ~ 8m[^1]
+| Accuracy            | ±6cm@ (0.2-3m)[^2]<br> ±2%@ (3m-8m)
+| Measurement unit    | cm (Default)
+| Range resolution    | 1cm
+| Field of View (FOV) | 0.2°[^2]
+| Framerate           | 1~250Hz[^3] (100Hz default)
+| Weight              | ≤ 5g[^4]
+| Power               | ≤ 0.35W[^4]
+| Dimensions          | 35mm x 21.25mm x 13.5mm[^4]
+| Communication       | I2C and UART[^5]
+
+[^1]: Operating range measured indoor based on a standard whiteboard with 90% reflectivity.
+
+[^2]: This is the theoretical value, the real value may be different.
+
+[^3]: 100Hz is the default value and only any factor (500/n, n can be any integer in [2, 500] e.g. 250Hz, 125Hz) of 500Hz are available.
+
+[^4]: Taken from the [TF-Luna's product page](https://en.benewake.com/TFLuna/index.html).
+
+[^5]: The choice between the two is made based on how the 5th pin is connected. Ground for I2C and 3.3V for UART.
+
 ## Getting Started
 
 ### Usage
