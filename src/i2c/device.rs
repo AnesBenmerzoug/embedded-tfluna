@@ -529,7 +529,7 @@ where
     /// - Error: Registers 0x08 (low byte) and 0x09 (high byte) error code
     ///
     /// Temperature is automatically converted from hundredths of degrees Celsius to degrees Celsius.
-    pub fn measure(&mut self) -> Result<SensorReading, Error<I2C::Error>> {
+    pub fn get_measurement(&mut self) -> Result<SensorReading, Error<I2C::Error>> {
         let mut buffer = [0; 10];
         self.read::<10>(Register::Distance, &mut buffer)?;
         let distance = self.combine_buffer_into_word(&[buffer[0], buffer[1]]);

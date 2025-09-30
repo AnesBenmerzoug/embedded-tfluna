@@ -99,7 +99,7 @@ mod test {
         let expectations = read_expectations(0x00, &[10, 0, 0x64, 0, 0xB2, 0x0C, 0, 0, 0, 0]);
         let mut i2c = I2cTraitMock::new(&expectations);
         let mut device = setup(&mut i2c);
-        let sensor_reading = device.measure();
+        let sensor_reading = device.get_measurement();
         assert!(sensor_reading.is_ok(), "{:?}", sensor_reading);
         let expected_sensor_reading = SensorReading {
             distance: 10,

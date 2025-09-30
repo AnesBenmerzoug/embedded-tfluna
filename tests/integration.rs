@@ -276,7 +276,7 @@ mod tests {
     fn test_measure(context: Context) {
         let mut tfluna = context.tfluna;
         // We take an initial measurement and make sure all values have appropriate values
-        let measurement = tfluna.measure().unwrap();
+        let measurement = tfluna.get_measurement().unwrap();
         debug!("measurement = {:?}", measurement);
         context.delay.delay_millis(1);
 
@@ -287,7 +287,7 @@ mod tests {
         assert_eq!(measurement.error, 0);
         // We wait for a bit and take a second measurement and expect both to be different
         context.delay.delay_millis(100);
-        let second_measurement = tfluna.measure().unwrap();
+        let second_measurement = tfluna.get_measurement().unwrap();
         assert_ne!(measurement, second_measurement)
     }
 
@@ -311,7 +311,7 @@ mod tests {
         assert!(context.data_ready_pin.is_high());
 
         debug!("Reading measurement");
-        tfluna.measure().unwrap();
+        tfluna.get_measurement().unwrap();
 
         debug!("Waiting for data ready pin to go low");
         for i in 0..10 {
@@ -329,7 +329,7 @@ mod tests {
         let mut tfluna = context.tfluna;
 
         debug!("Taking initial measurement");
-        let initial_measurement = tfluna.measure().unwrap();
+        let initial_measurement = tfluna.get_measurement().unwrap();
         context.delay.delay_millis(100);
 
         debug!("Setting ranging mode to trigger");
@@ -343,11 +343,11 @@ mod tests {
         context.delay.delay_millis(100);
 
         debug!("Reading measurement");
-        let first_measurement_after_trigger = tfluna.measure().unwrap();
+        let first_measurement_after_trigger = tfluna.get_measurement().unwrap();
         assert_ne!(initial_measurement, first_measurement_after_trigger);
         // We wait for some time and read again but without triggering the measurement
         context.delay.delay_millis(100);
-        let second_measurement_after_trigger = tfluna.measure().unwrap();
+        let second_measurement_after_trigger = tfluna.get_measurement().unwrap();
         assert_eq!(
             first_measurement_after_trigger,
             second_measurement_after_trigger
@@ -372,7 +372,7 @@ mod tests {
         tfluna.wake_from_ultra_low_power().unwrap();
 
         debug!("Reading distance");
-        let measurement = tfluna.measure().unwrap();
+        let measurement = tfluna.get_measurement().unwrap();
         debug!("Measurement = {:?}", measurement);
 
         debug!("Setting power mode back to normal");

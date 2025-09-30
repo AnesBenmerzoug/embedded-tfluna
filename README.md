@@ -83,7 +83,7 @@ fn main() -> ! {
     tfluna.enable().unwrap();
 
     loop {
-        let measurement = tfluna.measure().unwrap();
+        let measurement = tfluna.get_measurement().unwrap();
         info!("Distance = {:?}", measurement.distance);
         let delay_start = Instant::now();
         while delay_start.elapsed() < Duration::from_millis(100) {}
