@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
     paths-ignore:
       - "**/README.md"
   pull_request:
@@ -34,15 +36,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
         with:
-          target: riscv32imc-unknown-none-elf
-          toolchain: stable
           components: rust-src, rustfmt, clippy
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ steps.rust-toolchain.outputs.cachekey }}
       - name: Run command 'cargo ${{ matrix.action.command }}''
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
+      
   tests:
     name: Tests
     runs-on: ubuntu-latest
@@ -50,14 +54,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          target: riscv32imc-unknown-none-elf
-          toolchain: stable
-          components: rust-src, rustfmt, clippy
+        uses: dtolnay/rust-toolchain@stable
       - name: Enable caching
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ steps.rust-toolchain.outputs.cachekey }}
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Run tests and generate code coverage
         run: cargo integration-mock-tests-ci
+
+
+  release:
+    # if: startsWith(github.ref, 'refs/tags/')
+    needs: [code-checks, tests]
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: cargo login
+        run: |-
+          echo "${{ secrets.CRATES_IO_API_TOKEN }}" | cargo login
+      - name: Create GitHub release
+        uses: docker://antonyurchenko/git-release:v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFT_RELEASE: 'true'
