@@ -117,4 +117,26 @@ mod test {
         );
         i2c.done();
     }
+
+    #[test]
+    fn test_invalid_framerate() {
+        let mut i2c = I2cTraitMock::new(Vec::new());
+        let mut device = setup(&mut i2c);
+        // Try to use a value that is not a divisor of 500
+        assert!(device.set_framerate(240).is_err());
+        // Try to use a value that is higher than 250
+        assert!(device.set_framerate(500).is_err());
+        i2c.done();
+    }
+
+    #[test]
+    fn test_invalid_slave_address() {
+        let mut i2c = I2cTraitMock::new(Vec::new());
+        let mut device = setup(&mut i2c);
+        // Try to use a value that is lower than 8
+        assert!(device.set_slave_address(1).is_err());
+        // Try to use a value that is higher than 119 (0x77)
+        assert!(device.set_slave_address(200).is_err());
+        i2c.done();
+    }
 }
