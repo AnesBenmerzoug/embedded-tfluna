@@ -24,6 +24,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bisync"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5020822f6d6f23196ccaf55e228db36f9de1cf788052b37992e17cbc96ec41a7"
+dependencies = [
+ "bisync_macros",
+]
+
+[[package]]
+name = "bisync_macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d21f40d350a700f6aa107e45fb26448cf489d34794b2ba4522181dc9f1173af6"
+
+[[package]]
 name = "bitfield"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,6 +380,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c4c685bbef7fe13c3c6dd4da26841ed3980ef33e841cddfa15ce8a8fb3f1884"
 dependencies = [
+ "defmt 0.3.100",
  "embedded-hal 1.0.0",
 ]
 
@@ -452,8 +468,10 @@ dependencies = [
 name = "embedded-tfluna"
 version = "0.1.0"
 dependencies = [
+ "bisync",
  "defmt 1.0.1",
  "embedded-hal 1.0.0",
+ "embedded-hal-async",
  "embedded-hal-mock",
  "embedded-test",
  "esp-hal",
