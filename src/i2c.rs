@@ -12,9 +12,25 @@
 //! | Address range | 0x01~0x7F |
 
 mod constants;
-mod device;
 mod types;
 
+#[path = "i2c"]
+#[cfg(feature = "async")]
+pub mod asynchronous {
+    //! Asynchronous I2C interface
+    use bisync::asynchronous::*;
+    mod device;
+    pub use device::*;
+}
+
+#[path = "i2c"]
+pub mod blocking {
+    //! Blocking I2C interface
+    use bisync::synchronous::*;
+    mod device;
+    pub use device::*;
+}
+
+pub use blocking::TFLuna;
 pub use constants::DEFAULT_SLAVE_ADDRESS;
-pub use device::TFLuna;
 pub use types::{Address, Error};
