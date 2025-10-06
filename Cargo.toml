@@ -29,7 +29,9 @@ defmt = ["dep:defmt", "embedded-hal/defmt-03", "embedded-hal-async/defmt-03"]
 async = ["dep:embedded-hal-async"]
 
 [target.'cfg(not(target_arch = "riscv32"))'.dev-dependencies]
-embedded-hal-mock = "0.11.1"
+rstest = "0.26.1"
+embedded-hal-mock = { version = "0.11.1", features = ["embedded-hal-async"] }
+tokio = { version = "1.47.1", features = ["rt", "macros"] }
 
 [target.riscv32imc-unknown-none-elf.dev-dependencies]
 log = "0.4.28"
