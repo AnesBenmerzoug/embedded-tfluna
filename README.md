@@ -119,6 +119,11 @@ fn main() -> ! {
 }
 ```
 
+## Feature Flags
+
+- `defmt` - Enable logging output using [`defmt`](https://crates.io/crates/defmt) and implement `defmt::Format` on certain types.
+- `async` - Enable asynchronous interface.
+
 
 ## License
 
@@ -129,7 +134,7 @@ Licensed under either of
 
 at your option.
 
-### Contribution
+## Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
