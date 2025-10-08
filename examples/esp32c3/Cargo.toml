@@ -1,24 +1,25 @@
-[package]
-edition = "2021"
-name = "esp32c3"
-rust-version = "1.86"
+[workspace]
+resolver = "3"
+members = ["blocking", "asynchronous"]
+
+[workspace.package]
 version = "0.1.0"
+description = "Example TF-Luna showing use of blocking i2c interface in embedded-tfluna with esp32 c3."
+authors = ["Anes Benmerzoug <anes.benmerzoug@gmail.com>"]
+edition = "2024"
+publish = false
 
-[[bin]]
-name = "esp32c3"
-path = "./src/main.rs"
-
-[dependencies]
+[workspace.dependencies]
 defmt = "1.0.1"
 esp-bootloader-esp-idf = { version = "0.2.0", features = ["esp32c3"] }
 esp-hal = { version = "=1.0.0-rc.0", features = [
-  "defmt",
-  "esp32c3",
-  "unstable",
+    "defmt",
+    "esp32c3",
+    "unstable",
 ] }
 critical-section = "1.2.0"
 rtt-target = { version = "0.6.1", features = ["defmt"] }
-embedded-tfluna = { path = "../.." }
+embedded-tfluna = { path = "../..", features = ["defmt"] }
 
 [profile.dev]
 # Rust debug is too slow.

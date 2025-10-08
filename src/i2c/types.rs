@@ -57,10 +57,13 @@ pub enum Register {
     /// Distance measurement low byte register - centimeters - Read-only
     Distance = 0x00,
     /// Signal strength measurement low byte register - Read-only
+    #[allow(dead_code)]
     SignalStrength = 0x02,
     /// Temperature measurement low byte register - 0.01°C units - Read-only
+    #[allow(dead_code)]
     Temperature = 0x04,
     /// Timestamp low byte register - device ticks - Read-only
+    #[allow(dead_code)]
     Timestamp = 0x06,
     /// Error low byte register - Read-only
     Error = 0x08,
