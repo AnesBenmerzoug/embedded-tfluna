@@ -19,7 +19,56 @@ use embedded_hal_async::{
     i2c::{Error as I2CError, ErrorKind, I2c as I2cTrait, SevenBitAddress},
 };
 
-/// TF-Luna controller
+// TODO: Figure out a better to document both blocking and synchronous interfaces without duplicating
+// the structs
+/// TF-Luna blocking controller/driver
+///
+/// # Simple example
+///
+/// This example shows how to get a distance measurement from the device in the simplest way possible.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Enable the device first
+/// tfluna.enable()?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement()?;
+/// ```
+///
+/// # Trigger ranging mode example
+///
+/// This example how to use the device's trigger ranging mode.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Set trigger ranging mode
+/// tfluna.set_ranging_mode(RangingMode::Trigger)?;
+/// // Enable the device
+/// tfluna.enable()?;
+/// // Trigger measurement
+/// tfluna.trigger_measurement()?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement()?;
+/// ```
+///
+/// # Ultra-low power mode example  
+///
+/// This example how to use the device's ultra-low power mode.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Enable the device
+/// tfluna.enable()?;
+/// // Set ultra-low power mode
+/// tfluna.set_power_mode(PowerMode::UltraLow)?;
+/// // Wait for device to reboot
+/// Delay::new().from_millis(500);
+/// // Wake up device from ultra-low power mode
+/// tfluna.wake_from_ultra_low_power()?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement()?;
+/// ```
+#[only_sync]
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
@@ -27,6 +76,66 @@ pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
     i2c: I2C,
     /// I2C device address
     address: Address,
+    /// Concrete delay implementation
+    delay: D,
+}
+
+/// TF-Luna asynchronous controller/driver
+///
+/// # Simple example
+///
+/// This example shows how to get a distance measurement from the device in the simplest way possible.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Enable the device first
+/// tfluna.enable().await?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement().await?;
+/// ```
+///
+/// # Trigger ranging mode example
+///
+/// This example how to use the device's trigger ranging mode.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Enable the device
+/// tfluna.enable().await?;
+/// // Set trigger ranging mode
+/// tfluna.set_ranging_mode(RangingMode::Trigger).await?;
+/// // Trigger measurement
+/// tfluna.trigger_measurement().await?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement().await?;
+/// ```
+///
+/// # Ultra-low power mode example  
+///
+/// This example how to use the device's ultra-low power mode.
+///
+/// ```rust
+/// let mut tfluna = TFLuna::new(i2c, Address::default(), Delay::new())?;
+/// // Enable the device
+/// tfluna.enable().await?;
+/// // Set ultra-low power mode
+/// tfluna.set_power_mode(PowerMode::UltraLow).await?;
+/// // Wait for device to reboot
+/// Delay::new().from_millis(500).await;
+/// // Wake up device from ultra-low power mode
+/// tfluna.wake_from_ultra_low_power().await?;
+/// // Get measurement from device
+/// let measurement = tfluna.get_measurement().await?;
+/// ```
+#[only_async]
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TFLuna<I2C: I2cTrait<SevenBitAddress>, D: DelayNs> {
+    /// Concrete I2C device implementation.
+    i2c: I2C,
+    /// I2C device address
+    address: Address,
+    /// Concrete delay implementation
     delay: D,
 }
 

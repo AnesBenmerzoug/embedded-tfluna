@@ -55,8 +55,7 @@ The TF-Luna's characteristics, taken from the [user manual](https://en.benewake.
 
 ### Usage
 
-Check out the [examples](examples/) directory for examples of using the TF-Luna
-with different micro-controllers and boards.
+See the [examples](examples/) directory for examples of using the TF-Luna with different micro-controllers and boards.
 
 #### Example for ESP32 C3
 
