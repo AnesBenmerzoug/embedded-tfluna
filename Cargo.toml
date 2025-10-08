@@ -1,6 +1,6 @@
 [package]
 name = "embedded-tfluna"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Platform-agnostic Rust driver for the TF-Luna LiDAR distance sensor."
 authors = ["Anes Benmerzoug <anes.benmerzoug@gmail.com>"]
