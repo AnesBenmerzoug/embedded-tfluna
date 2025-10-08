@@ -6,10 +6,6 @@ description.workspace = true
 authors.workspace = true
 publish.workspace = true
 
-[[bin]]
-name = "esp32c3"
-path = "./src/main.rs"
-
 [dependencies]
 defmt = { workspace = true }
 esp-bootloader-esp-idf = { workspace = true }
