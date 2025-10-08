@@ -1,0 +1,19 @@
+[package]
+name = "asynchronous"
+edition.workspace = true
+version.workspace = true
+description.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+defmt = { workspace = true }
+esp-bootloader-esp-idf = { workspace = true }
+esp-hal = { workspace = true }
+critical-section = { workspace = true }
+rtt-target = { workspace = true }
+embedded-tfluna = { workspace = true, features = ["async"] }
+embassy-executor = { version = "0.7.0", features = ["defmt"] }
+embassy-time = { version = "0.5.0", features = ["defmt"] }
+esp-hal-embassy = { version = "0.9.0", features = ["defmt", "esp32c3"] }
+static_cell = "2.1.1"

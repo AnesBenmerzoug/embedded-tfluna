@@ -21,6 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        working-directory: [".", "examples/esp32c3"]
         action:
           - command: build
             args: --release
@@ -44,8 +45,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ steps.rust-toolchain.outputs.cachekey }}
-      - name: Run command 'cargo ${{ matrix.action.command }}''
+      - name: Run command 'cargo ${{ matrix.action.command }}'' in directory '${{ matrix.working-directory }}'
         run: cargo ${{ matrix.action.command }} ${{ matrix.action.args }}
+        working-directory: ${{ matrix.working-directory }}
       
   tests:
     name: Tests
