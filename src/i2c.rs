@@ -19,6 +19,7 @@ mod types;
 pub mod asynchronous {
     //! Asynchronous I2C interface
     use bisync::asynchronous::*;
+    #[allow(clippy::duplicate_mod)]
     mod device;
     pub use device::*;
 }
@@ -27,6 +28,7 @@ pub mod asynchronous {
 pub mod blocking {
     //! Blocking I2C interface
     use bisync::synchronous::*;
+    #[allow(clippy::duplicate_mod)]
     mod device;
     pub use device::*;
 }

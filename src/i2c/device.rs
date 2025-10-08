@@ -141,13 +141,15 @@ where
         self.write_byte(
             Register::RestoreFactoryDefaults,
             constants::RESTORE_FACTORY_DEFAULTS_COMMAND_VALUE,
-        ).await
+        )
+        .await
     }
 
     /// Save current settings to persistent storage.
     #[bisync]
     pub async fn save_settings(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(Register::Save, constants::SAVE_COMMAND_VALUE).await
+        self.write_byte(Register::Save, constants::SAVE_COMMAND_VALUE)
+            .await
     }
 
     /// Set enable bit.
@@ -155,7 +157,8 @@ where
     /// Calling this method will enable the device's measurements.
     #[bisync]
     pub async fn enable(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(Register::Enable, constants::ENABLE_COMMAND_VALUE).await
+        self.write_byte(Register::Enable, constants::ENABLE_COMMAND_VALUE)
+            .await
     }
 
     /// Unset enable bit
@@ -163,13 +166,15 @@ where
     /// Calling this method will disable the device's measurements.
     #[bisync]
     pub async fn disable(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(Register::Enable, constants::DISABLE_COMMAND_VALUE).await
+        self.write_byte(Register::Enable, constants::DISABLE_COMMAND_VALUE)
+            .await
     }
 
     /// Reboots device
     #[bisync]
     pub async fn reboot(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(Register::ShutdownReboot, constants::REBOOT_COMMAND_VALUE).await
+        self.write_byte(Register::ShutdownReboot, constants::REBOOT_COMMAND_VALUE)
+            .await
     }
 
     /// Get the device firmware.
@@ -317,7 +322,8 @@ where
         self.write_byte(
             Register::PowerSavingMode,
             constants::NORMAL_POWER_MODE_COMMAND_VALUE,
-        ).await
+        )
+        .await
     }
 
     #[bisync]
@@ -325,7 +331,8 @@ where
         self.write_byte(
             Register::PowerSavingMode,
             constants::POWER_SAVING_POWER_MODE_COMMAND_VALUE,
-        ).await
+        )
+        .await
     }
 
     // Set ultra-low power mode, save settings and reboot
@@ -337,7 +344,8 @@ where
             constants::ULTRA_LOWER_POWER_MODE_COMMAND_VALUE,
             constants::SAVE_COMMAND_VALUE,
             constants::REBOOT_COMMAND_VALUE,
-        ]).await?;
+        ])
+        .await?;
         // Wait for a second for the device to be ready again
         self.delay.delay_ms(1000).await;
         Ok(())
@@ -351,7 +359,8 @@ where
             constants::NORMAL_POWER_MODE_COMMAND_VALUE,
             constants::SAVE_COMMAND_VALUE,
             constants::REBOOT_COMMAND_VALUE,
-        ]).await?;
+        ])
+        .await?;
         // Wait for a second for the device to be ready again
         self.delay.delay_ms(1000).await;
         Ok(())
@@ -375,7 +384,7 @@ where
                         // Check if the I2C error is a NoAcknowledge error
                         if let ErrorKind::NoAcknowledge(_) = e.kind() {
                             // Wait at least 12ms after awakening as per manual
-                            self.delay.delay_ms(12);
+                            self.delay.delay_ms(12).await;
                             Ok(())
                         } else {
                             // Return the original I2C error for other error kinds
@@ -489,7 +498,8 @@ where
         &mut self,
         value: u16,
     ) -> Result<(), Error<I2C::Error>> {
-        self.write_word(Register::SignalStrengthThreshold, value).await
+        self.write_word(Register::SignalStrengthThreshold, value)
+            .await
     }
 
     /// Get the current dummy distance value.
@@ -631,7 +641,8 @@ where
 
     #[bisync]
     pub async fn trigger_measurement(&mut self) -> Result<(), Error<I2C::Error>> {
-        self.write_byte(Register::Trigger, constants::TRIGGER_COMMAND_VALUE).await?;
+        self.write_byte(Register::Trigger, constants::TRIGGER_COMMAND_VALUE)
+            .await?;
         Ok(())
     }
 }
