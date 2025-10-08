@@ -10,8 +10,14 @@ The structure of this example was generated using esp-generate version 0.5.0
 
 - Make sure you have installed the pre-requisites for cross-compiling and flashing the ESP32.
 
-- Run:
+- For the blocking I2C interface use:
 
   ```shell
-  cargo run
+  cargo run --package blocking
+  ```
+
+- For the asynchronous I2C interface use:
+
+  ```shell
+  cargo run --package asynchronous
   ```
